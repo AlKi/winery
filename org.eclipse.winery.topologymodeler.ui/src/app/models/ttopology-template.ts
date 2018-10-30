@@ -26,12 +26,15 @@ export class AbstractTTemplate {
 export class TTopologyTemplate extends AbstractTTemplate {
     nodeTemplates: Array<TNodeTemplate> = [];
     relationshipTemplates: Array<TRelationshipTemplate> = [];
+    groups: Array<TGroup> = [];
 }
 
 /**
  * This is the datamodel for node Templates
  */
 export class TNodeTemplate extends AbstractTTemplate {
+
+    //public visible: boolean = false;
 
     constructor(public properties: any,
                 public id: string,
@@ -195,4 +198,17 @@ export class Visuals {
                 public imageUrl?: string,
                 public pattern?: string) {
     }
+}
+
+/**
+ * This is the data model for groups
+ */
+export class TGroup{
+    constructor(
+        public localName: string,
+        public borderColor,
+        public backgroundColor: string){
+    }
+    nodeIds: string[] = [];
+    relationshipIds: string[] = [];
 }

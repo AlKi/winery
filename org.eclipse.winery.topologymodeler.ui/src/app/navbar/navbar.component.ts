@@ -23,6 +23,9 @@ import { Subscription } from 'rxjs';
 import { Hotkey, HotkeysService } from 'angular2-hotkeys';
 import { TopologyRendererState } from '../redux/reducers/topologyRenderer.reducer';
 import { WineryActions } from '../redux/actions/winery.actions';
+import { TTopologyTemplate, TNodeTemplate } from '../models/ttopology-template';
+import { EntityTypesModel } from '../models/entityTypesModel';
+import { isNullOrUndefined } from 'util';
 
 /**
  * The navbar of the topologymodeler.
@@ -47,6 +50,7 @@ export class NavbarComponent implements OnDestroy {
 
     @Input() hideNavBarState: boolean;
     @Input() readonly: boolean;
+    @Input() entityTypes: EntityTypesModel;
 
     @ViewChild('exportCsarButton')
     private exportCsarButtonRef: ElementRef;
@@ -182,14 +186,46 @@ export class NavbarComponent implements OnDestroy {
                 this.matchingOngoing = true;
                 break;
             }
-            case 'substituteTopology':
+            case 'substituteTopology': {
                 this.ngRedux.dispatch(this.actions.substituteTopology());
                 break;
-            case 'refineTopology':
+            }
+            case 'refineTopology': {
                 this.readonly = true;
                 this.ngRedux.dispatch(this.wineryActions.sendPaletteOpened(false));
                 this.ngRedux.dispatch(this.actions.refineTopology());
                 break;
+            }
+            case 'showViewBar': {
+                this.ngRedux.dispatch(this.actions.toggleViewBar());
+                break;
+            }
+            case 'hideHardware': {
+                this.ngRedux.dispatch(this.actions.toggleHideHardware());
+                this.clickHideUnhideNodes();
+                break;
+            }
+            case 'hideSoftware': {
+                this.ngRedux.dispatch(this.actions.toggleHideSoftware());
+                this.clickHideUnhideNodes();
+                break;
+            }
+            case 'hideNoncomputing': {
+                this.ngRedux.dispatch(this.actions.toggleHideNoncomputing());
+                break;
+            }
+            case 'substituteHardware': {
+                this.ngRedux.dispatch(this.actions.toggleSubstituteHardware());
+                break;
+            }
+            case 'substituteSoftware': {
+                this.ngRedux.dispatch(this.actions.toggleSubstituteSoftware());
+                break;
+            }
+            case 'substituteSelection': {
+                this.ngRedux.dispatch(this.actions.toggleSubstituteSelection());
+                break;
+            }
         }
     }
 
@@ -238,4 +274,136 @@ export class NavbarComponent implements OnDestroy {
     openManagementUi() {
         window.open(this.backendService.serviceTemplateUiUrl, '_blank');
     }
+
+    /**
+     * hides or un-hides all nodes which are oft the given node type or children of it, according to the activated buttons
+     */
+    clickHideUnhideNodes(){
+        //this.alert.info(typeof this.unformattedTopologyTemplate.nodeTemplates);
+        var nodeIdsToHide: string[] = [];
+        // iterate over all node components
+        for( var nodeIndex=0; nodeIndex<this.unformattedTopologyTemplate.nodeTemplates.length; nodeIndex++ ){
+            if(this.navbarButtonsState.buttonsState.hideHardwareButton){
+                if(this.checkIfNodeTypeDerivedOf(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].type, '{http://www.example.org/tosca/nodetypes}Hardware-Node_0.0.1-w1-wip1')){
+                    // add this node to the list of nodes to be set invisible
+                    nodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
+                }
+            }
+            if(this.navbarButtonsState.buttonsState.hideSoftwareButton){
+                if(!this.checkIfNodeTypeDerivedOf(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].type, '{http://www.example.org/tosca/nodetypes}Hardware-Node_0.0.1-w1-wip1')){
+                    // add this node to the list of nodes to be set invisible
+                    nodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
+                }
+            }
+        }
+        this.alert.info("Hiding " + nodeIdsToHide.length + " Nodes");
+        //console.log("unformattedTopologyTemplate: " +JSON.stringify(this.unformattedTopologyTemplate));
+        var relationshipIdsToHide = this.checkRelationshipsToHide(nodeIdsToHide);
+        console.log("hiding nodes: " + JSON.stringify(nodeIdsToHide));
+        console.log("hiding relationships: " + JSON.stringify(relationshipIdsToHide));
+        this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(nodeIdsToHide, relationshipIdsToHide));
+    }
+
+    /**
+     *
+     * @param nodeTypeName qName of a nodeType to be checked if it is a child nodeType of the second parameter 'parentNodeTypeName'
+     * @param parentNodeTypeName qName of a nodeType to be checked if it is a parent nodeType of the first parameter 'nodeTypeName'
+     * @returns {boolean} true if parentNodeTypeName is any parent node type qName of the given nodeTypeName qname
+     */
+    private checkIfNodeTypeDerivedOf(nodeTypeName: string, parentNodeTypeName): boolean{
+        // add this nodes type
+        var parentNodeTypeNames: string[] = new Array(nodeTypeName);
+        var parentNodeTypeFound: boolean = false;
+        var currentParentNodeTypeName: string = nodeTypeName;
+        //console.log(JSON.stringify(this.entityTypes.unGroupedNodeTypes));
+
+        do {
+            parentNodeTypeFound = false;
+            // iterate all node type namespaces
+            searchParent:
+                // iterate all node types of this namespace
+                for(let nodeTypeIndex=0; nodeTypeIndex<this.entityTypes.unGroupedNodeTypes.length; nodeTypeIndex ++){
+                    // if this node type is the last found (parent) node type, check if there is a "derivedFrom" attribute to get the parent node type
+                    if(currentParentNodeTypeName == this.entityTypes.unGroupedNodeTypes[nodeTypeIndex].qName){
+                        //console.log("found node Type " + this.entityTypes.unGroupedNodeTypes[nodeTypeIndex].qName);
+                        for(let implementationIndex=0; implementationIndex<this.entityTypes.unGroupedNodeTypes[nodeTypeIndex].full.serviceTemplateOrNodeTypeOrNodeTypeImplementation.length; implementationIndex++){
+                            // if the attribute "derivedFrom" is defined
+                            if(!isNullOrUndefined(this.entityTypes.unGroupedNodeTypes[nodeTypeIndex].full.serviceTemplateOrNodeTypeOrNodeTypeImplementation[implementationIndex].derivedFrom)){
+                                // add this parent node type
+                                if(this.entityTypes.unGroupedNodeTypes[nodeTypeIndex].full.serviceTemplateOrNodeTypeOrNodeTypeImplementation[implementationIndex].derivedFrom.typeRef == parentNodeTypeName){
+                                    // we found the parent node type, so the given nodeType is derived from it
+                                    return true;
+                                }
+                                // found parent node, but not the given one
+                                parentNodeTypeFound = true;
+                                //
+                                currentParentNodeTypeName = this.entityTypes.unGroupedNodeTypes[nodeTypeIndex].full.serviceTemplateOrNodeTypeOrNodeTypeImplementation[implementationIndex].derivedFrom.typeRef;
+                                break searchParent;
+                            }
+                        }
+
+                    }
+                }
+
+        }while(parentNodeTypeFound);
+
+        // parent node type not found in parent nodes of given node type
+        return false;
+    }
+
+    /**
+     * checks all relationships for hidden sources/targets
+     */
+    checkRelationshipsToHide(nodesToHide: string[]): string[]{
+        var relsToHide: string[] = [];
+        // iterate all nrelationshipTemplates and check, if a target or source is to be hidden. If so, add the relationship to the hidden ones as well
+        for(let relTempIndex=0; relTempIndex<this.unformattedTopologyTemplate.relationshipTemplates.length; relTempIndex++){
+            checkThisRelationship:
+            for(let hiddenNodeTypeIndex=0; hiddenNodeTypeIndex<nodesToHide.length; hiddenNodeTypeIndex++){
+                if((this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].sourceElement.ref === nodesToHide[hiddenNodeTypeIndex])
+                        || (this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].targetElement.ref === nodesToHide[hiddenNodeTypeIndex])){
+                    relsToHide.push(this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].id);
+                    break checkThisRelationship;
+                }
+            }
+        }
+        return relsToHide;
+    }
+
+    /**
+     *
+     * @param nodeTypeName qname of the
+     * @returns string[] containing the nodes nodeType name and all parent nodeType names
+     */
+    /*private getParentNodeTypeNames(nodeTypeName: string): string[]{
+     // add this nodes type
+     var parentNodeTypeNames: string[] = new Array(nodeTypeName);
+     var parentNodeTypeFound: boolean = false;
+     var currentParentNodeTypeName: string = nodeTypeName;
+     do {
+     parentNodeTypeFound = false;
+     // iterate all node type namespaces
+     searchParent:
+     // iterate all node types of this namespace
+     for( var nodeTypeIndex=0; nodeTypeIndex<this.entityTypes.unGroupedNodeTypes.length; nodeTypeIndex ++){
+     // if this node type is the last found (parent) node type, check if there is a "derivedFrom" attribute to get the parent node type
+     if(currentParentNodeTypeName == this.entityTypes.unGroupedNodeTypes[nodeTypeIndex].qName){
+     for(var implementationIndex=0; implementationIndex<this.entityTypes.unGroupedNodeTypes[nodeTypeIndex].full.serviceTemplateOrNodeTypeOrNodeTypeImplementation.length; implementationIndex++){
+     // if the attribute "derivedFrom" is defined
+     if(!isNullOrUndefined(this.entityTypes.unGroupedNodeTypes[nodeTypeIndex].full.serviceTemplateOrNodeTypeOrNodeTypeImplementation[implementationIndex].derivedFrom)){
+     // add this parent node type
+     parentNodeTypeNames.push(this.entityTypes.unGroupedNodeTypes[nodeTypeIndex].full.serviceTemplateOrNodeTypeOrNodeTypeImplementation[implementationIndex].derivedFrom.typeRef);
+     parentNodeTypeFound = true;
+     currentParentNodeTypeName = this.entityTypes.unGroupedNodeTypes[nodeTypeIndex].full.serviceTemplateOrNodeTypeOrNodeTypeImplementation[implementationIndex].derivedFrom.typeRef;
+     break searchParent;
+     }
+     }
+
+     }
+     }
+
+     }while(parentNodeTypeFound);
+
+     return parentNodeTypeNames;
+     }*/
 }

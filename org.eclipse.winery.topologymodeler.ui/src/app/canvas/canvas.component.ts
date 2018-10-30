@@ -1675,6 +1675,7 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
                         return true;
                     }
                 });
+                // TODO: is this right? shouldn't this line be after line 1674 before returning????
                 this.allNodeTemplates.splice(indexOfNode, 1);
             }
         });

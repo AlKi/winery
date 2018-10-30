@@ -13,7 +13,7 @@
  ********************************************************************************/
 
 import { Action } from 'redux';
-import { HighlightNodesAction, TopologyRendererActions } from '../actions/topologyRenderer.actions';
+import { HighlightNodesAction, HideNodesAndRelationshipsAction, TopologyRendererActions } from '../actions/topologyRenderer.actions';
 
 export interface TopologyRendererState {
     buttonsState: {
@@ -32,8 +32,13 @@ export interface TopologyRendererState {
         matchTopologyButton?: boolean;
         substituteTopologyButton?: boolean;
         refineTopologyButton?: boolean;
+        showViewBarButton?: boolean;
+        hideHardwareButton?: boolean;
+        hideSoftwareButton?: boolean;
     };
     nodesToSelect?: string[];
+    nodesToHide: string[];
+    relationshipsToHide: string[];
 }
 
 export const INITIAL_TOPOLOGY_RENDERER_STATE: TopologyRendererState = {
@@ -52,8 +57,13 @@ export const INITIAL_TOPOLOGY_RENDERER_STATE: TopologyRendererState = {
         splitTopologyButton: false,
         matchTopologyButton: false,
         substituteTopologyButton: false,
-        refineTopologyButton: false
-    }
+        refineTopologyButton: false,
+        showViewBarButton: false,
+        hideHardwareButton: false,
+        hideSoftwareButton: false
+    },
+    nodesToHide: [""],
+    relationshipsToHide: [""]
 };
 /**
  * Reducer for the TopologyRenderer
@@ -194,6 +204,47 @@ export const TopologyRendererReducer =
                     delete lastState.nodesToSelect;
                 }
                 break;
+            case TopologyRendererActions.HIDE_NODES_AND_RELATIONSHIPS:
+                const nodesAndRelationshipsData = <HideNodesAndRelationshipsAction> action;
+
+                console.log("NodesAndRelationshipsData:\n" + JSON.stringify(nodesAndRelationshipsData));
+
+                if (nodesAndRelationshipsData.nodesToHide && nodesAndRelationshipsData.relationshipsToHide) {
+                    console.log("changing nodesToHide and relationshipsToHide in global state");
+                    return {
+                        ...lastState,
+                        nodesToHide: nodesAndRelationshipsData.nodesToHide,
+                        relationshipsToHide: nodesAndRelationshipsData.relationshipsToHide
+                    };
+                } else {
+                    lastState.nodesToHide = [""];
+                    lastState.relationshipsToHide = [""];
+                }
+                break;
+            case TopologyRendererActions.TOGGLE_VIEW_BAR:
+                return {
+                    ...lastState,
+                    buttonsState: {
+                        ...lastState.buttonsState,
+                        showViewBarButton: !lastState.buttonsState.showViewBarButton
+                    }
+                };
+            case TopologyRendererActions.TOGGLE_HIDE_HARDWARE:
+                return {
+                    ...lastState,
+                    buttonsState: {
+                        ...lastState.buttonsState,
+                        hideHardwareButton: !lastState.buttonsState.hideHardwareButton
+                    }
+                };
+            case TopologyRendererActions.TOGGLE_HIDE_SOFTWARE:
+                return {
+                    ...lastState,
+                    buttonsState: {
+                        ...lastState.buttonsState,
+                        hideSoftwareButton: !lastState.buttonsState.hideSoftwareButton
+                    }
+                };
         }
         return lastState;
     };

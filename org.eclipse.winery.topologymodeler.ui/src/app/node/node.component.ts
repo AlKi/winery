@@ -29,6 +29,9 @@ import { isNullOrUndefined } from 'util';
 import { GroupedNodeTypeModel } from '../models/groupedNodeTypeModel';
 import { EntityTypesModel } from '../models/entityTypesModel';
 import { TopologyRendererState } from '../redux/reducers/topologyRenderer.reducer';
+//import { NgRedux } from '@angular-redux/store';
+//import { Observable } from 'rxjs/Rx';
+//import { Subscription } from 'rxjs';
 
 /**
  * Every node has its own component and gets created dynamically.
@@ -52,6 +55,7 @@ export class NodeComponent implements OnInit, AfterViewInit, OnDestroy, DoCheck 
 
     public items: string[] = ['Item 1', 'Item 2', 'Item 3'];
     nodeClass: string;
+    visible: boolean = true;
     visibilityState = 'hidden';
     connectorEndpointVisible = false;
     startTime;
@@ -97,6 +101,7 @@ export class NodeComponent implements OnInit, AfterViewInit, OnDestroy, DoCheck 
     popoverHtml = `<div class="">Open NodeType in a separate tab</div>`;
     // differ object for detecting changes made to the nodeTemplate object for DoCheck
     differ: any;
+    unsubscribe$: any; // function handle for unsubscribing from state changes
 
     constructor(private zone: NgZone,
                 private $ngRedux: NgRedux<IWineryState>,
@@ -172,6 +177,8 @@ export class NodeComponent implements OnInit, AfterViewInit, OnDestroy, DoCheck 
     ngOnInit() {
         this.differ = this.differs.find([]).create();
         this.nodeClass = this.nodeTemplate.visuals.pattern ? 'pattern' : 'nodeTemplate';
+        this.unsubscribe$ = this.$ngRedux.select(state => state.topologyRendererState)
+            .subscribe(currentButtonsState => this.checkHideState(currentButtonsState));
     }
 
     /**
@@ -200,6 +207,7 @@ export class NodeComponent implements OnInit, AfterViewInit, OnDestroy, DoCheck 
     ngAfterViewInit(): void {
         this.sendId.emit(this.nodeTemplate.id);
 
+        //this.nodeTemplate.visible = true;
         this.visibilityState = 'visible';
     }
 
@@ -387,6 +395,7 @@ export class NodeComponent implements OnInit, AfterViewInit, OnDestroy, DoCheck 
      * Angular lifecycle event.
      */
     ngOnDestroy(): void {
+        this.unsubscribe$();
         this.askForRemoval.emit(this.nodeTemplate.id);
         if (this.nodeRef) {
             this.nodeRef.destroy();
@@ -403,5 +412,17 @@ export class NodeComponent implements OnInit, AfterViewInit, OnDestroy, DoCheck 
         } else if (this.endTime - this.startTime >= 200) {
             this.longpress = true;
         }
+    }
+
+    checkHideState(topologyState: TopologyRendererState){
+
+        for(let i=0; i<topologyState.nodesToHide.length; i++){
+            if(this.nodeTemplate.id === topologyState.nodesToHide[i]){
+                this.visibilityState = 'hidden';
+                return;
+            }
+        }
+        this.visibilityState = 'visible';
+
     }
 }

@@ -19,6 +19,11 @@ export interface HighlightNodesAction extends Action {
     nodesToHighlight: string[];
 }
 
+export interface HideNodesAndRelationshipsAction extends Action {
+    nodesToHide: string[];
+    relationshipsToHide: string[];
+}
+
 /**
  * Actions of the topologyRenderer
  */
@@ -41,6 +46,14 @@ export class TopologyRendererActions {
     static SUBSTITUTE_TOPOLOGY = 'SUBSTITUTE_TOPOLOGY';
     static REFINE_TOPOLOGY = 'REFINE_TOPOLOGY';
     static HIGHLIGHT_NODES = 'HIGHLIGHT_NODES';
+    static TOGGLE_VIEW_BAR = 'TOGGLE_VIEW_BAR';
+    static TOGGLE_SUBSTITUTE_HARDWARE = 'TOGGLE_SUBSTITUTE_HARDWARE';
+    static TOGGLE_SUBSTITUTE_SOFTWARE = 'TOGGLE_SUBSTITUTE_SOFTWARE';
+    static TOGGLE_SUBSTITUTE_SELECTION = 'TOGGLE_SUBSTITUTE_SELECTION';
+    static TOGGLE_HIDE_HARDWARE = 'TOGGLE_HIDE_HARDWARE';
+    static TOGGLE_HIDE_SOFTWARE = 'TOGGLE_HIDE_SOFTWARE';
+    static TOGGLE_HIDE_NONCOMPUTING = 'TOGGLE_HIDE_NONCOMPUTING';
+    static HIDE_NODES_AND_RELATIONSHIPS = 'HIDE_NODES_AND_RELATIONSHIPS';
 
     togglePolicies(): Action {
         return { type: TopologyRendererActions.TOGGLE_POLICIES };
@@ -107,5 +120,39 @@ export class TopologyRendererActions {
             type: TopologyRendererActions.HIGHLIGHT_NODES,
             nodesToHighlight: listOfNodeIds
         };
+    }
+
+    hideNodesAndRelationships(listOfNodeIdsToHide: string[], listOfRelationshipIdsToHide: string[]): HideNodesAndRelationshipsAction  {
+        console.log("updating nodeIds and relationshipIds to hide");
+        return {
+            type: TopologyRendererActions.HIDE_NODES_AND_RELATIONSHIPS,
+            nodesToHide: listOfNodeIdsToHide,
+            relationshipsToHide: listOfRelationshipIdsToHide
+        };
+
+    }
+
+    toggleViewBar(): Action {
+        return {type: TopologyRendererActions.TOGGLE_VIEW_BAR};
+    }
+
+    toggleSubstituteHardware(): Action {
+        return {type: TopologyRendererActions.TOGGLE_SUBSTITUTE_HARDWARE};
+    }
+    toggleSubstituteSoftware(): Action {
+        return {type: TopologyRendererActions.TOGGLE_SUBSTITUTE_SOFTWARE};
+    }
+    toggleSubstituteSelection(): Action {
+        return {type: TopologyRendererActions.TOGGLE_SUBSTITUTE_SELECTION};
+    }
+
+    toggleHideHardware(): Action {
+        return {type: TopologyRendererActions.TOGGLE_HIDE_HARDWARE};
+    }
+    toggleHideSoftware(): Action {
+        return {type: TopologyRendererActions.TOGGLE_HIDE_SOFTWARE};
+    }
+    toggleHideNoncomputing(): Action {
+        return {type: TopologyRendererActions.TOGGLE_HIDE_NONCOMPUTING};
     }
 }
