@@ -1,0 +1,217 @@
+<!--
+   * Copyright (c) 2017-2018 Contributors to the Eclipse Foundation
+   *
+   * See the NOTICE file(s) distributed with this work for additional
+   * information regarding copyright ownership.
+   *
+   * This program and the accompanying materials are made available under the
+   * terms of the Eclipse Public License 2.0 which is available at
+   * http://www.eclipse.org/legal/epl-2.0, or the Apache Software License 2.0
+   * which is available at https://www.apache.org/licenses/LICENSE-2.0.
+   *
+   * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+   -->
+<div id="NTPropertiesView"
+     class="sidebar-root"
+     style="display: block;"
+     [@sidebarAnimationStatus]="sidebarAnimationStatus"
+     *ngIf="groupSidebarState.sidebarVisible">
+
+    <!-- Repaint jsPlumb on every accordion click -->
+    <accordion #accordion [closeOthers]="true">
+        <!-- Groups -->
+        <accordion-group
+            class="card-header-node-accordions"
+            #groups
+            panelClass="accordionGroupPanel" *ngFor="let group of groupSidebarState.groups">
+            <div accordion-heading (click)="setGroupSelected(group)">
+                {{ group.name }}:{{ group.type.id }}
+            </div>
+
+            <div id="groupInformationSection">
+                <table class="grouped-nodes-table">
+                    <tbody>
+                    <tr>
+                        <span>Id: {{ group.id }}</span>
+                    </tr>
+                    <tr>
+                        <span>Name: {{ group.name }}</span>
+                    </tr>
+                    <tr class="grouped-nodes-table-td">
+                        <span>Type: {{ group.type.id}}</span>
+                    </tr>
+
+                    </tbody>
+                </table>
+            </div>
+
+            <div *ngIf="!group.properties"
+                 style="display: flex; justify-content: center; align-items: center">
+                <i class="fa fa-3x fa-refresh fa-spin" style="max-width: 50%;"></i>
+            </div>
+            <table *ngIf="group.properties.kvproperties" class="table table-border--grey table-sm body-table">
+                <div>
+                    <th>
+                        Key
+                    </th>
+                    <th>
+                        Values
+                    </th>
+
+                    <tr *ngFor="let item of group.properties.kvproperties | keysPipe">
+                        <td class="">{{item.key}}</td>
+                        <td class="">
+                    <textarea
+                        style="width:100%; overflow-y: scroll;"
+                        rows="1"
+                        placeholder="Edit your value here."
+                        required
+                        value="{{item.value}}"
+                        (keyup)="properties.next($event.target.value)"
+                        (keyup)="keyOfEditedKVProperty.next(item.key)">
+                    </textarea>
+                        </td>
+                    </tr>
+                </div>
+            </table>
+
+            <div *ngIf="group.properties.any">
+                <textarea
+                    style="width:100%; overflow-y: scroll;"
+                    rows="6"
+                    placeholder="Edit your XML here."
+                    required
+                    [disabled]="readonly"
+                    value="{{groupProperties}}"
+                    (keyup)="properties.next($event.target.value)">
+                </textarea>
+            </div>
+
+
+            <div id="nodeTemplateGroupInformationSection">
+                <table class="grouped-nodes-table">
+                    <tbody>
+                    <tr *ngFor="let node of group.nodeTemplates">
+                        <td class="grouped-nodes-table-td">
+                            <span>{{ node.name }}</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+            </div>
+
+            <div>
+                <button *ngIf="!readonly"
+                        class="btn btn-sm align-middle btn-success" type="button" style="margin: 2px"
+                        (click)="addNodes(selection)">Set Nodes
+                </button>
+
+                <button *ngIf="!readonly"
+                        class="btn btn-sm align-middle btn-danger" type="button" style="margin: 2px"
+                        (click)="deleteGroup()">Delete
+                </button>
+
+            </div>
+        </accordion-group>
+    </accordion>
+    <div style="vertical-align: center">
+        <div style="vertical-align: center">
+        <button
+            class="btn btn-sm align-middle btn-info" type="button" id="createGroup" style="margin: 2px"
+            (click)="openCreateGroupModal()">Create Group
+        </button>
+
+        <button
+            class="btn btn-sm align-middle btn-success" type="button" id="createGroup" style="margin: 2px"
+            (click)="saveGroups()">Save Groups
+        </button>
+        </div>
+
+            <winery-modal *ngIf="groupsModalData.visible" bsModal #groupNodesModal="bs-modal" [modalRef]="groupNodesModal" >
+                <winery-modal-header [title]="'Create Group'">
+                </winery-modal-header>
+                <winery-modal-body>
+                    <form #groupNodesForm="ngForm" id="groupNodesForm" enctype="multipart/form-data">
+                        <fieldset>
+                            <div class="form-group">
+                                <label for="GroupIdDisplay" class="control-label">Group:</label>
+                                <div class="form-group">
+                                    <label for="GroupIdDisplay" class="control-label">Id:</label>
+                                    <input [(ngModel)]="groupsModalData.id"
+                                           id="GroupIdDisplay"
+                                           name="GroupIdDisplay"
+                                           class="form-control"
+                                           type="text"
+                                           required
+                                           />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="GroupNameDisplay" class="control-label">Name:</label>
+                                    <input [(ngModel)]="groupsModalData.name"
+                                           id="GroupNameDisplay"
+                                           name="GroupNameDisplay"
+                                           class="form-control"
+                                           type="text"
+                                           />
+                                </div>
+
+
+                                <div id="groupTypeSelectionDiv">
+                                    <select id=groupTypeSelectId name="groupTypeSelect"
+                                            class="form-control"
+                                            [(ngModel)]="groupsModalData.type"
+                                            required>
+                                        <ng-container>
+                                            <option *ngIf="groupsModalData.types.groupTypes === undefined"
+                                                    value="null" disabled="true" [selected]="true">Group Types are still
+                                                loading...
+                                            </option>
+
+                                            <option
+                                                *ngFor="let groupType of groupsModalData.types.groupTypes"
+                                                [value]="groupType | json">
+                                                {{groupType.id}}
+                                            </option>
+                                        </ng-container>
+
+                                    </select>
+                                    <i *ngIf="groupsModalData.types.groupTypes === undefined"
+                                       class="fa fa-refresh fa-spin"></i>
+                                </div>
+
+                               <!-- <div class="radio">
+                                    <label style="margin-bottom: 1em;">
+                                        <input type="radio" name="templateCreation" value="kv"
+                                               id="kvPropertyRadio"
+                                               [(ngModel)]="modalSelectedRadioButton"/>
+                                        Create Key Value Properties
+                                    </label>
+
+                                </div>
+                                <div class="radio">
+                                    <label style="margin-bottom: 1em;">
+                                        <input type="radio" name="templateCreation" value="any"
+                                               id="anyPropertyRadio"
+                                               [(ngModel)]="modalSelectedRadioButton"/>
+                                       XML Properties
+                                    </label>
+
+                                </div> -->
+                            </div>
+                        </fieldset>
+                    </form>
+                </winery-modal-body>
+                <winery-modal-footer [showDefaultButtons]="false">
+                    <button type="button" id="cancelGroupNode" class="btn btn-default" (click)="closeCreateGroupModal();">Cancel
+                    </button>
+                    <button (click)="addGroup();closeCreateGroupModal();"
+                            type="button" id="groupNodeBtn" class="btn btn-primary"
+                            [disabled]="!groupNodesForm.form.valid">Add
+                    </button>
+                </winery-modal-footer>
+            </winery-modal>
+
+    </div>
+</div>
