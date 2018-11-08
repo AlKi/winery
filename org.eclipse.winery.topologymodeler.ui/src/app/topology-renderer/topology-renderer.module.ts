@@ -20,6 +20,7 @@ import { RouterModule } from '@angular/router';
 import { BsDropdownModule } from 'ngx-bootstrap/dropdown';
 import { AccordionModule } from 'ngx-bootstrap/accordion';
 import { NavbarComponent } from '../navbar/navbar.component';
+import { ViewbarComponent } from '../viewbar/viewbar.component';
 import { NodeComponent } from '../node/node.component';
 import { CanvasComponent } from '../canvas/canvas.component';
 import { LayoutDirective } from '../layout/layout.directive';
@@ -62,6 +63,7 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
     ],
     declarations: [
         NavbarComponent,
+        ViewbarComponent,
         NodeComponent,
         CanvasComponent,
         LayoutDirective,

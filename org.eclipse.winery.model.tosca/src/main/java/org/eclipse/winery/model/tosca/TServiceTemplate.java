@@ -35,7 +35,8 @@ import org.eclipse.jdt.annotation.Nullable;
     "tags",
     "boundaryDefinitions",
     "topologyTemplate",
-    "plans"
+    "plans",
+    "groups"
 })
 public class TServiceTemplate extends HasId implements HasName, HasTargetNamespace {
 
@@ -50,6 +51,9 @@ public class TServiceTemplate extends HasId implements HasName, HasTargetNamespa
 
     @XmlElement(name = "Plans")
     protected TPlans plans;
+
+    @XmlElement(name = "Groups")
+    protected TGroups groups;
 
     @XmlAttribute(name = "name")
     protected String name;
@@ -70,6 +74,7 @@ public class TServiceTemplate extends HasId implements HasName, HasTargetNamespa
         this.boundaryDefinitions = builder.boundaryDefinitions;
         this.topologyTemplate = builder.topologyTemplate;
         this.plans = builder.plans;
+        this.groups = builder.groups;
         this.name = builder.name;
         this.targetNamespace = builder.targetNamespace;
         this.substitutableNodeType = builder.substitutableNodeType;
@@ -139,6 +144,11 @@ public class TServiceTemplate extends HasId implements HasName, HasTargetNamespa
     }
 
     @Nullable
+    public TGroups getGroups() { return groups;}
+
+    public void setGroups(@Nullable TGroups value){ this.groups = value; }
+
+    @Nullable
     public String getName() {
         return name;
     }
@@ -175,6 +185,7 @@ public class TServiceTemplate extends HasId implements HasName, HasTargetNamespa
         private TTags tags;
         private TBoundaryDefinitions boundaryDefinitions;
         private TPlans plans;
+        private TGroups groups;
         private String name;
         private String targetNamespace;
         private QName substitutableNodeType;
@@ -201,6 +212,11 @@ public class TServiceTemplate extends HasId implements HasName, HasTargetNamespa
 
         public Builder setName(String name) {
             this.name = name;
+            return this;
+        }
+
+        public Builder setPlans(TGroups groups) {
+            this.groups = groups;
             return this;
         }
 

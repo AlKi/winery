@@ -54,6 +54,7 @@ export class TopologyRendererActions {
     static TOGGLE_HIDE_SOFTWARE = 'TOGGLE_HIDE_SOFTWARE';
     static TOGGLE_HIDE_NONCOMPUTING = 'TOGGLE_HIDE_NONCOMPUTING';
     static HIDE_NODES_AND_RELATIONSHIPS = 'HIDE_NODES_AND_RELATIONSHIPS';
+    static GROUP_NODES = 'GROUP_NODES';
 
     togglePolicies(): Action {
         return { type: TopologyRendererActions.TOGGLE_POLICIES };
@@ -107,6 +108,10 @@ export class TopologyRendererActions {
         return { type: TopologyRendererActions.MATCH_TOPOLOGY };
     }
 
+    groupNodes(): Action {
+        return {type: TopologyRendererActions.GROUP_NODES};
+    }
+
     substituteTopology(): Action {
         return { type: TopologyRendererActions.SUBSTITUTE_TOPOLOGY };
     }
@@ -123,7 +128,6 @@ export class TopologyRendererActions {
     }
 
     hideNodesAndRelationships(listOfNodeIdsToHide: string[], listOfRelationshipIdsToHide: string[]): HideNodesAndRelationshipsAction  {
-        console.log("updating nodeIds and relationshipIds to hide");
         return {
             type: TopologyRendererActions.HIDE_NODES_AND_RELATIONSHIPS,
             nodesToHide: listOfNodeIdsToHide,

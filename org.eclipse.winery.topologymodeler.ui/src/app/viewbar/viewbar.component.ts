@@ -13,7 +13,7 @@
  ********************************************************************************/
 
 import { Component, ElementRef, Input, OnDestroy, ViewChild } from '@angular/core';
-import { animate, style, transition, trigger } from '@angular/animations';
+import {animate, group, style, transition, trigger} from '@angular/animations';
 import { ToastrService } from 'ngx-toastr';
 import { NgRedux } from '@angular-redux/store';
 import { TopologyRendererActions } from '../redux/actions/topologyRenderer.actions';
@@ -131,7 +131,17 @@ export class ViewbarComponent implements OnDestroy {
             }
             case 'substituteSelection': {
                 this.ngRedux.dispatch(this.actions.toggleSubstituteSelection());
+                console.log(JSON.stringify(this.entityTypes.groups.group));
                 break;
+            }
+            default:{
+                // most probably a "hide group" button from dropdown, if so...
+                if(event.target.id.startsWith("hideGroup")){
+                    // ...remove the "hideGroup" prefix to get the group name (TODO: Group ID, when the backend works!)
+                    let groupName: string = event.target.id.replace("hideGroup", "");
+                    console.log("hiding nodes of group " + groupName);
+                    this.hideGroupByName(groupName);
+                }
             }
         }
     }
@@ -142,6 +152,59 @@ export class ViewbarComponent implements OnDestroy {
      */
     ngOnDestroy() {
         this.subscriptions.forEach(subscription => subscription.unsubscribe());
+    }
+
+
+    /**
+     * hides nodes of first group with given name - TODO: remove when backend bug is fixed
+     * @param groupName
+     */
+    hideGroupByName(groupName: string){
+        console.log(JSON.stringify(this.entityTypes));
+        for(let groupId=0; groupId<this.entityTypes.groups.group.length; groupId++){
+            if(this.entityTypes.groups.group[groupId].name === groupName){
+                this.hideGroup(this.entityTypes.groups.group[groupId]);
+                return;
+            }
+        }
+    }
+
+
+    /**
+     * hides nodes of group with given id
+     * @param groupName
+     */
+    hideGroupById(groupId: string){
+        console.log(JSON.stringify(this.entityTypes));
+        for(let groupIndex=0; groupIndex<this.entityTypes.groups.group.length; groupIndex++){
+            if(this.entityTypes.groups.group[groupIndex].name === groupId){
+                this.hideGroup(this.entityTypes.groups.group[groupIndex]);
+                return;
+            }
+        }
+    }
+
+    /**
+     * hides all nodes of a given group
+     * @param group
+     */
+    hideGroup(group){
+        var nodeIdsToHide: string[] = [];
+        // iterate over all node components
+        for( let nodeIndex=0; nodeIndex<this.unformattedTopologyTemplate.nodeTemplates.length; nodeIndex++ ){
+            for(let groupNodeIndex=0; groupNodeIndex<group.nodes.length(); groupNodeIndex++){
+                if(group.nodes[groupNodeIndex].id === this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id){
+                    // add this node to the list of nodes to be set invisible
+                    nodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
+                }
+            }
+        }
+        this.alert.info("Hiding " + nodeIdsToHide.length + " Nodes");
+        //console.log("unformattedTopologyTemplate: " +JSON.stringify(this.unformattedTopologyTemplate));
+        var relationshipIdsToHide = this.checkRelationshipsToHide(nodeIdsToHide);
+        console.log("hiding nodes: " + JSON.stringify(nodeIdsToHide));
+        console.log("hiding relationships: " + JSON.stringify(relationshipIdsToHide));
+        this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(nodeIdsToHide, relationshipIdsToHide));
     }
 
     /**

@@ -20,12 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -39,12 +34,7 @@ import org.eclipse.winery.common.ids.definitions.ServiceTemplateId;
 import org.eclipse.winery.compliance.checking.ServiceTemplateCheckingResult;
 import org.eclipse.winery.compliance.checking.ServiceTemplateComplianceRuleRuleChecker;
 import org.eclipse.winery.model.substitution.Substitution;
-import org.eclipse.winery.model.tosca.TBoundaryDefinitions;
-import org.eclipse.winery.model.tosca.TExtensibleElements;
-import org.eclipse.winery.model.tosca.TPlans;
-import org.eclipse.winery.model.tosca.TRequirement;
-import org.eclipse.winery.model.tosca.TServiceTemplate;
-import org.eclipse.winery.model.tosca.TTopologyTemplate;
+import org.eclipse.winery.model.tosca.*;
 import org.eclipse.winery.model.tosca.utils.ModelUtilities;
 import org.eclipse.winery.repository.backend.BackendUtils;
 import org.eclipse.winery.repository.driverspecificationandinjection.DASpecification;
@@ -141,6 +131,21 @@ public class ServiceTemplateResource extends AbstractComponentInstanceResourceCo
         this.getServiceTemplate().setName(name);
         return RestUtils.persist(this);
     }
+
+    @PUT
+    @Path("groups")
+    public Response setGroups(TGroups groups) {
+        this.getServiceTemplate().setGroups(groups);
+        return RestUtils.persist(this);
+    }
+
+    @GET
+    @Path("groups")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getGroups() {
+        return Response.ok(this.getServiceTemplate().getGroups()).build();
+    }
+
 
     @GET
     @ApiOperation(value = "Returns the associated node type, which can be substituted by this service template.")

@@ -61,7 +61,8 @@ import org.w3c.dom.Text;
     TCapability.class,
     TRequirement.class,
     TRelationshipTemplate.class,
-    TNodeTemplate.class
+    TNodeTemplate.class,
+    TGroup.class
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class TEntityTemplate extends HasId implements HasType, HasName {

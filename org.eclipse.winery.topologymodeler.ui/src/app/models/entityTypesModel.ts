@@ -29,6 +29,8 @@ export class EntityTypesModel {
     policyTypes: EntityType[];
     relationshipTypes: VisualEntityType[];
     requirementTypes: EntityType[];
+    groups: any;
+    groupTypes: any;
     unGroupedNodeTypes: any;
 }
 

@@ -104,6 +104,14 @@
                 [style.background-color]="getStyle(navbarButtonsState.buttonsState.targetLocationsButton)">
                 Target Locations
             </button>
+            <button
+                class="btn btn-sm align-middle dark-button-style"
+                type="button"
+                id="groupNodes"
+                (click)="toggleButton($event)"
+                [style.background-color]="getStyle(navbarButtonsState.buttonsState.groupNodesButton)">
+                Groups
+            </button>
             <!--<button *ngIf="!readonly"
                     class="btn btn-sm align-middle dark-button-style" type="button" style="margin-left: 4px">Print View
             </button>-->
@@ -185,82 +193,8 @@
     </form>
 </nav>
 
-<nav class="navbar navbar-light bg-faded" *ngIf="navbarButtonsState.buttonsState.showViewBarButton && !hideNavBarState" [@navbarInOut]>
-    <form class="form-inline" style="justify-content: center;">
-        <button
-            class="btn btn-sm align-middle dark-button-style"
-            type="button"
-            id="substituteHardware"
-            tooltip="Substitute currently selected nodes by one substitution node"
-            (click)="toggleButton($event)"
-            [style.background-color]="getStyle(navbarButtonsState.buttonsState.substituteHardwareButton)">
-            Substitute Hardware
-        </button>
-        <button
-            class="btn btn-sm align-middle dark-button-style"
-            type="button"
-            id="substituteSoftware"
-            tooltip="Substitute currently selected nodes by one substitution node"
-            (click)="toggleButton($event)"
-            [style.background-color]="getStyle(navbarButtonsState.buttonsState.substituteSoftwareButton)">
-            Substitute Software
-        </button>
-        <button
-            class="btn btn-sm align-middle dark-button-style"
-            type="button"
-            id="substituteSelection"
-            tooltip="Substitute currently selected nodes by one substitution node"
-            (click)="toggleButton($event)"
-            [style.background-color]="getStyle(navbarButtonsState.buttonsState.substituteSelectionButton)">
-            Substitute Selection
-        </button>
-        <button
-            class="btn btn-sm align-middle dark-button-style"
-            type="button"
-            id="substituteCables"
-            tooltip="Substitute cable nodes"
-            (click)="toggleButton($event)"
-            [style.background-color]="getStyle(navbarButtonsState.buttonsState.substituteCablesButton)">
-            Substitute Cables
-        </button>
-        <button
-            class="btn btn-sm align-middle dark-button-style"
-            type="button"
-            id="substituteAdaptersAndCables"
-            tooltip="Substitute adapter nodes"
-            (click)="toggleButton($event)"
-            [style.background-color]="getStyle(navbarButtonsState.buttonsState.substituteAdaptersButton)">
-            Substitute Adapters
-        </button>
-
-        <div class="btn-group" style="margin-left: 4px" dropdown>
-            <button
-                class="btn btn-sm align-middle dark-button-style"
-                type="button"
-                id="hideHardware"
-                tooltip="Hide hardware nodes and relationships including them"
-                [style.background-color]="getStyle(navbarButtonsState.buttonsState.hideHardwareButton)"
-                (click)="toggleButton($event)">
-                Hardware Nodes
-            </button>
-            <button
-                class="btn btn-sm align-middle dark-button-style"
-                type="button"
-                id="hideSoftware"
-                tooltip="Hide software nodes and relationships including them"
-                (click)="toggleButton($event)"
-                [style.background-color]="getStyle(navbarButtonsState.buttonsState.hideSoftwareButton)">
-                Software Nodes
-            </button>
-            <button
-                class="btn btn-sm align-middle dark-button-style"
-                type="button"
-                id="hideNoncomputing"
-                tooltip="Hide hardware nodes which do not have relationships to any software nodes"
-                (click)="toggleButton($event)"
-                [style.background-color]="getStyle(navbarButtonsState.buttonsState.hideNoncomputingButton)">
-                Non Software related
-            </button>
-        </div>
-    </form>
-</nav>
+<winery-viewbar
+    [readonly]="readonly"
+    [hideNavBarState]="hideNavBarState"
+    [entityTypes]="entityTypes">
+</winery-viewbar>

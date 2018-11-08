@@ -32,9 +32,13 @@ export interface TopologyRendererState {
         matchTopologyButton?: boolean;
         substituteTopologyButton?: boolean;
         refineTopologyButton?: boolean;
+        groupNodesButton?: boolean;
         showViewBarButton?: boolean;
         hideHardwareButton?: boolean;
         hideSoftwareButton?: boolean;
+        substituteHardwareButton?: boolean;
+        substituteSoftwareButton?: boolean;
+        substituteSelectionButton?: boolean;
     };
     nodesToSelect?: string[];
     nodesToHide: string[];
@@ -58,9 +62,13 @@ export const INITIAL_TOPOLOGY_RENDERER_STATE: TopologyRendererState = {
         matchTopologyButton: false,
         substituteTopologyButton: false,
         refineTopologyButton: false,
+        groupNodesButton: false,
         showViewBarButton: false,
         hideHardwareButton: false,
-        hideSoftwareButton: false
+        hideSoftwareButton: false,
+        substituteHardwareButton: false,
+        substituteSoftwareButton: false,
+        substituteSelectionButton: false
     },
     nodesToHide: [""],
     relationshipsToHide: [""]
@@ -191,6 +199,14 @@ export const TopologyRendererReducer =
                     buttonsState: {
                         ...lastState.buttonsState,
                         refineTopologyButton: !lastState.buttonsState.refineTopologyButton
+                    }
+                };
+            case TopologyRendererActions.GROUP_NODES:
+                return {
+                    ...lastState,
+                    buttonsState: {
+                        ...lastState.buttonsState,
+                        groupNodesButton: !lastState.buttonsState.groupNodesButton
                     }
                 };
             case TopologyRendererActions.HIGHLIGHT_NODES:

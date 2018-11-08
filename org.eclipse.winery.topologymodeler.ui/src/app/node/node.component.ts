@@ -29,9 +29,6 @@ import { isNullOrUndefined } from 'util';
 import { GroupedNodeTypeModel } from '../models/groupedNodeTypeModel';
 import { EntityTypesModel } from '../models/entityTypesModel';
 import { TopologyRendererState } from '../redux/reducers/topologyRenderer.reducer';
-//import { NgRedux } from '@angular-redux/store';
-//import { Observable } from 'rxjs/Rx';
-//import { Subscription } from 'rxjs';
 
 /**
  * Every node has its own component and gets created dynamically.
@@ -288,13 +285,15 @@ export class NodeComponent implements OnInit, AfterViewInit, OnDestroy, DoCheck 
         // mouseup
         this.endTime = new Date().getTime();
         this.testTimeDifference($event);
-        if (this.previousPosition !== undefined && this.currentPosition !== undefined) {
+        /*if (this.previousPosition !== undefined && this.currentPosition !== undefined) {
             const differenceY = this.previousPosition.y - this.currentPosition.y;
             const differenceX = this.previousPosition.x - this.currentPosition.x;
             if (Math.abs(differenceX) > 2 || Math.abs(differenceY) > 2) {
                 this.updateSelectedNodes.emit();
             }
-        }
+        }*/
+        // emit even when there was no movement, so other components do have a chance to get the List of currently selected nodes
+        this.updateSelectedNodes.emit();
         if (this.unbindMouseMove) {
             this.unbindMouseMove();
         }

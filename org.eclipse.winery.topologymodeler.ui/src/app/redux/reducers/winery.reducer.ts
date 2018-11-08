@@ -17,19 +17,25 @@ import {
     DecMaxInstances, DecMinInstances, DeleteDeploymentArtifactAction, DeleteNodeAction, DeletePolicyAction, DeleteRelationshipAction,
     HideNavBarAndPaletteAction, IncMaxInstances, IncMinInstances, SaveNodeTemplateAction, SaveRelationshipAction, SendCurrentNodeIdAction,
     SendPaletteOpenedAction, SetCababilityAction, SetDeploymentArtifactAction, SetNodeVisuals, SetPolicyAction, SetPropertyAction, SetRequirementAction,
-    SetTargetLocation, SidebarMaxInstanceChanges, SidebarMinInstanceChanges, SidebarNodeNamechange, SidebarStateAction, UpdateNodeCoordinatesAction,
-    UpdateRelationshipNameAction, WineryActions
+    SetSelectedNodeIds, SetTargetLocation, SidebarMaxInstanceChanges, SidebarMinInstanceChanges, SidebarNodeNamechange, SidebarStateAction, UpdateNodeCoordinatesAction,
+    UpdateRelationshipNameAction, WineryActions, GroupSidebarStateAction, CreateGroupAction
 } from '../actions/winery.actions';
 import { TNodeTemplate, TRelationshipTemplate, TTopologyTemplate, Visuals } from '../../models/ttopology-template';
 import { TDeploymentArtifact } from '../../models/artifactsModalData';
+import { GroupsModalData } from '../../models/groupsModalData';
 
 export interface WineryState {
     currentPaletteOpenedState: boolean;
     hideNavBarAndPaletteState: boolean;
     sidebarContents: any;
+    groupSidebarContents: any;
     currentJsonTopology: TTopologyTemplate;
     currentNodeData: any;
     nodeVisuals: Visuals[];
+    // I know it shouldn't be here, but this modal is not defined on either the navbar or a node template, but on a sidebar...
+    createGroupModalData: GroupsModalData;
+    // same here...
+    selectedNodesIds: string[];
 }
 
 export const INITIAL_WINERY_STATE: WineryState = {
@@ -49,7 +55,16 @@ export const INITIAL_WINERY_STATE: WineryState = {
         id: '',
         focus: false
     },
-    nodeVisuals: null
+    nodeVisuals: null,
+    groupSidebarContents: {
+        sidebarVisible: false,
+        nodeClicked: false,
+        id: '',
+        nameTextFieldValue: '',
+        type: ''
+    },
+    createGroupModalData: new GroupsModalData(),
+    selectedNodesIds: []
 };
 
 /**
@@ -78,6 +93,20 @@ export const WineryReducer =
                 return <WineryState>{
                     ...lastState,
                     sidebarContents: newSidebarData
+                };
+            case WineryActions.OPEN_GROUP_SIDEBAR:
+                const newGroupSidebarData: any = (<GroupSidebarStateAction>action).sidebarContents;
+
+                return <WineryState>{
+                    ...lastState,
+                    groupSidebarContents: newGroupSidebarData
+                };
+            case WineryActions.CREATE_GROUP:
+                const createGroupModalData: any = (<CreateGroupAction>action).newGroup;
+
+                return <WineryState>{
+                    ...lastState,
+                    createGroupModalData: createGroupModalData
                 };
             case WineryActions.CHANGE_MIN_INSTANCES:
                 const sideBarNodeId: any = (<SidebarMinInstanceChanges>action).minInstances.id;
@@ -458,6 +487,13 @@ export const WineryReducer =
                 return {
                     ...lastState,
                     nodeVisuals: visuals
+                };
+            case WineryActions.SET_SELECTED_NODE_IDS:
+                const selecedNodeIds: string[] = (<SetSelectedNodeIds> action).selectedNodeIds;
+
+                return {
+                    ...lastState,
+                    selectedNodesIds: selecedNodeIds
                 };
 
             default:

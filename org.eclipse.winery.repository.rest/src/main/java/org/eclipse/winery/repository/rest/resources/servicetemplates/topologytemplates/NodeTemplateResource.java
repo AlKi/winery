@@ -35,7 +35,8 @@ public class NodeTemplateResource extends TEntityTemplateResource<TNodeTemplate>
 
     private final QName qnameX = new QName(Namespaces.TOSCA_WINERY_EXTENSIONS_NAMESPACE, "x");
     private final QName qnameY = new QName(Namespaces.TOSCA_WINERY_EXTENSIONS_NAMESPACE, "y");
-
+    //private final QName qnameGroups = new QName(Namespaces.TOSCA_WINERY_EXTENSIONS_NAMESPACE, "groups");
+    
     public NodeTemplateResource(IIdDetermination<TNodeTemplate> idDetermination, TNodeTemplate o, int idx, List<TNodeTemplate> list, IPersistable res) {
         super(idDetermination, o, idx, list, res);
     }

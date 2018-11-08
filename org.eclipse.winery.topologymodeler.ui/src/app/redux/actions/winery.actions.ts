@@ -38,6 +38,16 @@ export interface SidebarStateAction extends Action {
     };
 }
 
+export interface GroupSidebarStateAction extends Action {
+    sidebarContents: {
+        sidebarVisible: boolean,
+        nodeClicked: boolean,
+        id: string,
+        nameTextFieldValue: string,
+        type: string
+    };
+}
+
 export interface SidebarNodeNamechange extends Action {
     nodeNames: {
         newNodeName: string,
@@ -118,6 +128,21 @@ export interface SetPropertyAction extends Action {
     };
 }
 
+export interface SetGroupAction extends Action {
+    groupProperty: {
+        group: any
+    };
+}
+
+export interface CreateGroupAction extends Action {
+    newGroup: {
+        id: string,
+        name: string,
+        groupType: string,
+        visible: boolean
+    };
+}
+
 export interface SetCababilityAction extends Action {
     nodeCapability: {
         nodeId: string,
@@ -183,6 +208,10 @@ export interface SetNodeVisuals extends Action {
     visuals: Visuals[];
 }
 
+export interface SetSelectedNodeIds extends Action{
+    selectedNodeIds: string[];
+}
+
 /**
  * Winery Actions
  */
@@ -197,6 +226,7 @@ export class WineryActions {
     static DELETE_RELATIONSHIP_TEMPLATE = 'DELETE_RELATIONSHIP_TEMPLATE';
     static CHANGE_NODE_NAME = 'CHANGE_NODE_NAME';
     static OPEN_SIDEBAR = 'OPEN_SIDEBAR';
+    static OPEN_GROUP_SIDEBAR = 'OPEN_GROUP_SIDEBAR';
     static UPDATE_NODE_COORDINATES = 'UPDATE_NODE_COORDINATES';
     static UPDATE_REL_DATA = 'UPDATE_REL_DATA';
     static CHANGE_MIN_INSTANCES = 'CHANGE_MIN_INSTANCES';
@@ -217,6 +247,9 @@ export class WineryActions {
     static DELETE_POLICY = 'DELETE_POLICY';
     static SEND_CURRENT_NODE_ID = 'SEND_CURRENT_NODE_ID';
     static SET_NODE_VISUALS = 'SET_NODE_VISUALS';
+    static SET_GROUP = 'SET_GROUP';
+    static CREATE_GROUP = 'CREATE_GROUP';
+    static SET_SELECTED_NODE_IDS = 'SET_SELECTED_NODE_IDS';
 
     sendPaletteOpened: ActionCreator<SendPaletteOpenedAction> =
         ((paletteOpened) => ({
@@ -232,6 +265,11 @@ export class WineryActions {
         ((newSidebarData) => ({
             type: WineryActions.OPEN_SIDEBAR,
             sidebarContents: newSidebarData.sidebarContents
+        }));
+    openGroupSidebar: ActionCreator<SidebarStateAction> =
+        ((newSidebarData) => ({
+            type: WineryActions.OPEN_GROUP_SIDEBAR,
+            sidebarContents: newSidebarData.groupSidebarContents
         }));
     changeNodeName: ActionCreator<SidebarNodeNamechange> =
         ((nodeNames) => ({
@@ -304,6 +342,16 @@ export class WineryActions {
             nodeProperty: newProperty.nodeProperty,
             propertyType: newProperty.propertyType
         }));
+    setGroup: ActionCreator<SetGroupAction> =
+        ((newGroup) => ({
+            type: WineryActions.SET_GROUP,
+            groupProperty: newGroup.group
+        }));
+    /*openCreateGroupModal: ActionCreator<CreateGroupAction> =
+        ((newGroupData) => ({
+            type: WineryActions.CREATE_GROUP,
+            newGroup: newGroupData
+        }));*/
     setCapability: ActionCreator<SetCababilityAction> =
         ((newCapability) => ({
             type: WineryActions.SET_CAPABILITY,
@@ -348,5 +396,10 @@ export class WineryActions {
         ((visuals: Visuals[]) => ({
             type: WineryActions.SET_NODE_VISUALS,
             visuals: visuals
+        }));
+    setSelectedNodeIds:ActionCreator<SetSelectedNodeIds> =
+        ((selectedNodeIds) => ({
+            type: WineryActions.SET_SELECTED_NODE_IDS,
+            selectedNodeIds: selectedNodeIds
         }));
 }

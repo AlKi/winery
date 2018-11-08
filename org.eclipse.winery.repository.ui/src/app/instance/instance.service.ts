@@ -86,6 +86,9 @@ export class InstanceService {
             case ToscaTypes.ComplianceRule:
                 subMenu = ['README', 'LICENSE', 'Identifier', 'Required Structure', 'Tags', 'Documentation', 'XML'];
                 break;
+            case ToscaTypes.GroupType:
+                subMenu = ['README', 'Properties Definition', 'Documentation', 'XML'];
+                break;
             case ToscaTypes.PatternRefinementModel:
                 subMenu = ['README', 'LICENSE', 'Detector', 'Refinement Structure', 'Relation Mappings', 'XML'];
                 break;

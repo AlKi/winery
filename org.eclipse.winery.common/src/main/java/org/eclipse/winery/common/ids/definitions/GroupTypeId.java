@@ -1,8 +1,9 @@
 package org.eclipse.winery.common.ids.definitions;
 
-import javax.xml.namespace.QName;
 import org.eclipse.winery.common.ids.Namespace;
 import org.eclipse.winery.common.ids.XmlId;
+
+import javax.xml.namespace.QName;
 
 public class GroupTypeId extends EntityTypeId {
 

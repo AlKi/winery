@@ -185,6 +185,9 @@ export class NavbarComponent implements OnDestroy {
                 this.ngRedux.dispatch(this.actions.matchTopology());
                 this.matchingOngoing = true;
                 break;
+            }case 'groupNodes': {
+                this.ngRedux.dispatch(this.actions.groupNodes());
+                break;
             }
             case 'substituteTopology': {
                 this.ngRedux.dispatch(this.actions.substituteTopology());
@@ -200,7 +203,7 @@ export class NavbarComponent implements OnDestroy {
                 this.ngRedux.dispatch(this.actions.toggleViewBar());
                 break;
             }
-            case 'hideHardware': {
+            /*case 'hideHardware': {
                 this.ngRedux.dispatch(this.actions.toggleHideHardware());
                 this.clickHideUnhideNodes();
                 break;
@@ -225,7 +228,7 @@ export class NavbarComponent implements OnDestroy {
             case 'substituteSelection': {
                 this.ngRedux.dispatch(this.actions.toggleSubstituteSelection());
                 break;
-            }
+            }*/
         }
     }
 
@@ -278,7 +281,7 @@ export class NavbarComponent implements OnDestroy {
     /**
      * hides or un-hides all nodes which are oft the given node type or children of it, according to the activated buttons
      */
-    clickHideUnhideNodes(){
+    /*clickHideUnhideNodes(){
         //this.alert.info(typeof this.unformattedTopologyTemplate.nodeTemplates);
         var nodeIdsToHide: string[] = [];
         // iterate over all node components
@@ -302,7 +305,7 @@ export class NavbarComponent implements OnDestroy {
         console.log("hiding nodes: " + JSON.stringify(nodeIdsToHide));
         console.log("hiding relationships: " + JSON.stringify(relationshipIdsToHide));
         this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(nodeIdsToHide, relationshipIdsToHide));
-    }
+    }*/
 
     /**
      *
@@ -310,12 +313,11 @@ export class NavbarComponent implements OnDestroy {
      * @param parentNodeTypeName qName of a nodeType to be checked if it is a parent nodeType of the first parameter 'nodeTypeName'
      * @returns {boolean} true if parentNodeTypeName is any parent node type qName of the given nodeTypeName qname
      */
-    private checkIfNodeTypeDerivedOf(nodeTypeName: string, parentNodeTypeName): boolean{
+    /*private checkIfNodeTypeDerivedOf(nodeTypeName: string, parentNodeTypeName): boolean{
         // add this nodes type
         var parentNodeTypeNames: string[] = new Array(nodeTypeName);
         var parentNodeTypeFound: boolean = false;
         var currentParentNodeTypeName: string = nodeTypeName;
-        //console.log(JSON.stringify(this.entityTypes.unGroupedNodeTypes));
 
         do {
             parentNodeTypeFound = false;
@@ -349,12 +351,12 @@ export class NavbarComponent implements OnDestroy {
 
         // parent node type not found in parent nodes of given node type
         return false;
-    }
+    }*/
 
     /**
      * checks all relationships for hidden sources/targets
      */
-    checkRelationshipsToHide(nodesToHide: string[]): string[]{
+    /*checkRelationshipsToHide(nodesToHide: string[]): string[]{
         var relsToHide: string[] = [];
         // iterate all nrelationshipTemplates and check, if a target or source is to be hidden. If so, add the relationship to the hidden ones as well
         for(let relTempIndex=0; relTempIndex<this.unformattedTopologyTemplate.relationshipTemplates.length; relTempIndex++){
@@ -368,7 +370,7 @@ export class NavbarComponent implements OnDestroy {
             }
         }
         return relsToHide;
-    }
+    }*/
 
     /**
      *

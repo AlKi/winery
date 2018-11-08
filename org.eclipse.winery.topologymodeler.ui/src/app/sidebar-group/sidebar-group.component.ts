@@ -12,6 +12,18 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  ********************************************************************************/
 
+
+/**
+ * NOTE:
+ * Group object structure SHOULD be (bus isnt...)
+ * group{
+ *     id: string,
+ *     name: string,
+ *     type: {name: string, id: string, qname: string, ...}
+ *
+ * }
+ */
+
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { Component, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NgRedux } from '@angular-redux/store';
@@ -25,6 +37,7 @@ import { BackendService } from '../services/backend.service';
 import { GroupsModalData } from '../models/groupsModalData';
 import { TNodeTemplate } from '../models/ttopology-template';
 import { ModalDirective } from 'ngx-bootstrap';
+import {scalarMult} from "tweetnacl";
 
 /**
  * This is the right sidebar, node groups can be managed
@@ -51,13 +64,13 @@ import { ModalDirective } from 'ngx-bootstrap';
 })
 export class SidebarGroupComponent implements OnInit, OnDestroy {
     properties: Subject<string> = new Subject<string>();
-    sidebarSubscription;
+    sidebarSubscription: Subscription;
     groupSidebarState: any;
     sidebarAnimationStatus: string;
     selectedGroup: any;
     keyOfEditedKVProperty: Subject<string> = new Subject<string>();
     subscriptions: Array<Subscription> = [];
-    selectedNodes: Array<TNodeTemplate>;
+    selectedNodesFromSubscription: Array<string>;
     ngRedux: NgRedux<IWineryState>;
     backend: BackendService;
 
@@ -78,27 +91,22 @@ export class SidebarGroupComponent implements OnInit, OnDestroy {
         this.ngRedux = $ngRedux;
     }
 
-    @Input()
-    set SelectedNodes(selectedNodes: Array<TNodeTemplate>) {
-        this.selectedNodes = selectedNodes;
+    /**
+     * sets Array of node IDs to this Group
+     * @param selection
+     */
+    addNodes(selection) {
+        console.log("selection:");
+        console.log(JSON.stringify(selection));
+
+        console.log("this.selectedNodesFromSubscription:");
+        console.log(JSON.stringify(this.selectedNodesFromSubscription));
+
+        this.selectedGroup['nodeTemplates'] = JSON.parse(JSON.stringify(this.selectedNodesFromSubscription));
+        console.log("this.selectedGroup:");
+        console.log(JSON.stringify(this.selectedGroup));
     }
 
-    addNodes() {
-        const cleanedNodes = new Array();
-
-        for (const item in this.selectedNodes) {
-            if (item != null) {
-                const node = this.selectedNodes[item];
-                const jsonNode = JSON.parse(JSON.stringify(node));
-                delete jsonNode.visuals;
-                delete jsonNode._state;
-                delete jsonNode.otherAttributes;
-                cleanedNodes.push(jsonNode);
-            }
-        }
-
-        this.selectedGroup['nodeTemplates'] = JSON.parse(JSON.stringify(cleanedNodes));
-    }
 
     deleteGroup() {
         const groupId = this.selectedGroup.id;
@@ -126,6 +134,10 @@ export class SidebarGroupComponent implements OnInit, OnDestroy {
         this.groupSidebarState.groups.push(newGroup);
     }
 
+    /**
+     *
+     * @param groupType JSON formatted String representing a groupType instance
+     */
     fetchProperties(groupType: any) {
         const props = JSON.parse(groupType)['full']['serviceTemplateOrNodeTypeOrNodeTypeImplementation'][0].any[0];
 
@@ -209,6 +221,13 @@ export class SidebarGroupComponent implements OnInit, OnDestroy {
                     }
                 }));
             }));
+
+        this.subscriptions.push(this.$ngRedux.select(wineryState => wineryState.wineryState.selectedNodesIds)
+            .subscribe(selectedNodeIds => {
+                    this.selectedNodesFromSubscription = selectedNodeIds;
+                }
+            ));
+        //console.log(JSON.stringify(this.groupsModalData));
     }
 
     ngOnDestroy() {

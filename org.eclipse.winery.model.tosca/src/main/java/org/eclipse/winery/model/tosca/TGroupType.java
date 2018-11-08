@@ -1,8 +1,8 @@
 package org.eclipse.winery.model.tosca;
 
-import java.util.Objects;
-
 import org.eclipse.winery.model.tosca.visitor.Visitor;
+
+import java.util.Objects;
 
 public class TGroupType extends TEntityType {
     

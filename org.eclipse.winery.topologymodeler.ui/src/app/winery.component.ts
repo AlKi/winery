@@ -29,6 +29,7 @@ import { EntityTypesModel, TopologyModelerInputDataFormat } from './models/entit
 import { ActivatedRoute } from '@angular/router';
 import { TopologyModelerConfiguration } from './models/topologyModelerConfiguration';
 import { ToastrService } from 'ngx-toastr';
+import { GroupsModalData } from './models/groupsModalData';
 import { TopologyRendererState } from './redux/reducers/topologyRenderer.reducer';
 
 /**
@@ -51,6 +52,8 @@ export class WineryComponent implements OnInit {
     entityTypes: EntityTypesModel;
     hideNavBarState: boolean;
     subscriptions: Array<Subscription> = [];
+    selectedNodes: Array<TNodeTemplate>;
+    groupsModalData: GroupsModalData = new GroupsModalData(null, null, null, true, null);
     // This variable is set via the topologyModelerData input and decides if the editing functionalities are enabled
     readonly: boolean;
     refiningTopology: boolean;
@@ -106,6 +109,7 @@ export class WineryComponent implements OnInit {
             });
             this.initiateData();
         }
+        this.groupsModalData.types = this.entityTypes;
     }
 
     /**
@@ -224,6 +228,13 @@ export class WineryComponent implements OnInit {
                 });
                 break;
             }
+            case 'groups': {
+                this.entityTypes.groups = entityTypeJSON;
+                break;
+            }
+            case 'groupTypes': {
+                this.entityTypes.groupTypes = entityTypeJSON;
+            }
         }
     }
 
@@ -248,6 +259,7 @@ export class WineryComponent implements OnInit {
 
     initiateData(): void {
         this.backendService.allEntities$.subscribe(JSON => {
+            console.log(JSON);
             // Grouped NodeTypes
             this.initEntityType(JSON[0], 'groupedNodeTypes');
 
@@ -292,6 +304,12 @@ export class WineryComponent implements OnInit {
             // NodeTypes
             this.initEntityType(JSON[9], 'unGroupedNodeTypes');
 
+            // Groups
+            this.initEntityType(JSON[10], 'groups');
+
+            // Group Types
+            this.initEntityType(JSON[11], 'groupTypes');
+
             this.triggerLoaded('everything');
         });
     }
@@ -302,6 +320,12 @@ export class WineryComponent implements OnInit {
 
     sidebarDeleteButtonClicked($event) {
         this.sidebarDeleteButtonClickEvent = $event;
+    }
+
+    sendDataToGroupSideBar(selectedNodes: Array<TNodeTemplate>) {
+        this.selectedNodes = selectedNodes;
+        console.log("nodes selected:");
+        console.log(JSON.stringify(this.selectedNodes));
     }
 
     private triggerLoaded(what?: string) {

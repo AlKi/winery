@@ -289,6 +289,11 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
                 this.modalData.modalVariant = ModalVariant.Policies;
                 this.modalData.modalTitle = 'Policy';
                 break;
+            case toggleModalType.Groups:
+                this.modalData.modalVariant = ModalVariant.Other;
+                this.modalData.modalTitle = 'Groups';
+                this.modalData.modalVisible = false;
+                break;
             case toggleModalType.Requirements:
                 this.modalData.modalVariant = ModalVariant.Other;
                 this.modalData.modalVisible = false;
@@ -990,6 +995,10 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
                 this.clearSelectedNodes();
                 this.topologyRendererState.nodesToSelect
                     .forEach(value => this.enhanceDragSelection(value));
+            } else if(this.topologyRendererState.buttonsState.groupNodesButton){
+                this.openGroupSidebar();
+            } else {
+                this.closeGroupSidebar();
             }
 
             setTimeout(() => {
@@ -1083,6 +1092,8 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
      * Updates the internal representation of the selected nodes with the actual dom information
      */
     updateSelectedNodes(): void {
+        console.log("updateSelectedNodes() called");
+        console.log(JSON.stringify(this.selectedNodes));
         if (this.selectedNodes.length > 0 && this.child) {
             for (const nodeTemplate of this.child.nativeElement.children) {
                 if (this.selectedNodes.some(node => node.id === nodeTemplate.firstChild.id)) {
@@ -1090,6 +1101,7 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
                 }
             }
         }
+        this.updateSelectedNodesToInterestedComponents(this.selectedNodes);
     }
 
     /**
@@ -1382,6 +1394,88 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
     hideSidebar() {
         this.ngRedux.dispatch(this.actions.openSidebar({
             sidebarContents: {
+                sidebarVisible: false,
+                nodeClicked: false,
+                id: '',
+                nameTextFieldValue: '',
+                type: ''
+            }
+        }));
+    }
+
+
+
+    /**
+     * Hides the Sidebar on the right.
+     */
+    openGroupSidebar() {
+        let groupData = null;
+        let groupTypeData = null;
+
+        if (this.entityTypes.groups == null) {
+            groupData = new Array();
+        } else {
+            groupData = this.entityTypes.groups.group;
+        }
+
+        if (this.entityTypes.groupTypes == null) {
+            groupTypeData = new Array();
+        } else {
+            groupTypeData = this.entityTypes.groupTypes;
+        }
+
+        for (const groupIndex in groupData) {
+
+            if (!groupData[groupIndex].properties) {
+
+                if (!groupData[groupIndex].properties) {
+                    groupData[groupIndex].properties = {};
+                }
+
+                if (!groupData[groupIndex].properties.kvproperties) {
+                    groupData[groupIndex].properties.kvproperties = {};
+                }
+
+                const type = groupData[groupIndex].type;
+                for (const groupTypeIndex in groupTypeData) {
+                    if (groupTypeData[groupTypeIndex].qName === type) {
+                        if (groupTypeData[groupTypeIndex].full.serviceTemplateOrNodeTypeOrNodeTypeImplementation[0].any[0].propertyDefinitionKVList) {
+                            for (const prop in groupTypeData[groupTypeIndex].full
+                                .serviceTemplateOrNodeTypeOrNodeTypeImplementation[0].any[0].propertyDefinitionKVList) {
+                                if (prop != null) {
+                                    const item = groupTypeData[groupTypeIndex].full
+                                        .serviceTemplateOrNodeTypeOrNodeTypeImplementation[0].any[0].propertyDefinitionKVList[prop];
+                                    if (!groupData[groupIndex].properties.kvproperties[item.key]) {
+                                        groupData[groupIndex].properties.kvproperties[item.key] = item.value;
+                                    }
+                                }
+                            }
+                        } else {
+                            groupData[groupIndex].propeties.any = groupTypeData[groupTypeIndex].full
+                                .serviceTemplateOrNodeTypeOrNodeTypeImplementation[0].any[0].any;
+                        }
+
+                    }
+                }
+            }
+        }
+
+        this.ngRedux.dispatch(this.actions.openGroupSidebar({
+            groupSidebarContents: {
+                sidebarVisible: true,
+                nodeClicked: false,
+                id: '',
+                nameTextFieldValue: '',
+                type: '',
+                groups: groupData,
+                groupTypes: groupTypeData,
+            }
+        }));
+    }
+
+    closeGroupSidebar() {
+        this.ngRedux.dispatch(this.actions.openGroupSidebar({
+            groupSidebarContents: {
                 sidebarVisible: false,
                 nodeClicked: false,
                 id: '',
@@ -1962,5 +2056,14 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
     private layoutTopology() {
         this.layoutDirective.layoutNodes(this.nodeChildrenArray, this.allRelationshipTemplates);
         this.ngRedux.dispatch(this.topologyRendererActions.executeLayout());
+    }
+
+
+    private updateSelectedNodesToInterestedComponents(selectedNodes: TNodeTemplate[]){
+        let selectedNodeIds: string[] = [];
+        for(let nodeIndex = 0; nodeIndex < this.selectedNodes.length; nodeIndex++){
+            selectedNodeIds.push(selectedNodes[nodeIndex].id);
+        }
+        this.ngRedux.dispatch(this.actions.setSelectedNodeIds(selectedNodeIds));
     }
 }

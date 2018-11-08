@@ -42,6 +42,7 @@ export class TopologyRendererComponent implements OnInit, OnDestroy {
     @Input() relationshipTemplates: Array<TRelationshipTemplate>;
     @Input() sidebarDeleteButtonClickEvent: any;
     @Output() generatedReduxState = new EventEmitter();
+    @Output() setSelectedNodes = new EventEmitter();
     hideNavBarState: boolean;
     subscriptions: Array<Subscription> = [];
 

@@ -1,11 +1,10 @@
 package org.eclipse.winery.repository.rest.resources.entitytypes.grouptypes;
 
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-
+import io.swagger.annotations.Api;
 import org.eclipse.winery.repository.rest.resources._support.AbstractComponentsWithoutTypeReferenceResource;
 
-import io.swagger.annotations.Api;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 
 @Api(tags = "Group Types")
 public class GroupTypesResource extends AbstractComponentsWithoutTypeReferenceResource<GroupTypeResource> {
