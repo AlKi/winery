@@ -148,7 +148,7 @@ public class ServiceTemplateResource extends AbstractComponentInstanceResourceCo
     @Produces(MediaType.APPLICATION_JSON)
     public Response getGroups() {
         System.out.println("got a GET request to .../groups");
-        System.out.println(Json.pretty(this.getServiceTemplate().getGroups()));
+        System.out.println(Json.pretty(this.getServiceTemplate()));
         return Response.ok(this.getServiceTemplate().getGroups()).build();
     }
 

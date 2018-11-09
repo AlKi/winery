@@ -26,7 +26,7 @@ import javax.xml.bind.annotation.*;
 import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import javax.xml.namespace.QName;
-import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -55,8 +55,8 @@ public class TGroup extends TEntityTemplate {
 
     @Nullable
     @XmlElementWrapper(name = "NodeTemplateIds")
-    @XmlElement(name = "NodeTemplateIds", type = String[].class)
-    protected String[] nodeTemplateIds;
+    @XmlElement(name = "NodeTemplateIds")
+    protected List<String> nodeTemplateIds;
 
     
     public TGroup() {
@@ -122,11 +122,11 @@ public class TGroup extends TEntityTemplate {
         this.getProperties().getKVProperties();
     }
 
-    public String[] getNodeTemplateIds() {
+    public List<String> getNodeTemplateIds() {
         return nodeTemplateIds;
     }
 
-    public void setNodeTemplateIds(String[] nodeTemplateIds) {
+    public void setNodeTemplateIds(List<String> nodeTemplateIds) {
         this.nodeTemplateIds = nodeTemplateIds;
     }
     
@@ -138,12 +138,14 @@ public class TGroup extends TEntityTemplate {
         private String id;
         private String name;
         private QName groupType;
-        private String[] nodeTemplateIds;
+        private List<String> nodeTemplateIds;
 
-        public Builder(String id, String name, QName groupType, String[] nodeTemplateIds) {
+        public Builder(String id, String name, QName groupType, List<String> nodeTemplateIds) {
             this.id = id;
             this.name = name;
             this.groupType = groupType;
+            System.out.println("nodeTemplateIds to load:");
+            System.out.println(nodeTemplateIds.toString());
             this.nodeTemplateIds = nodeTemplateIds;
         }
 
@@ -162,9 +164,19 @@ public class TGroup extends TEntityTemplate {
             return this;
         }
 
-        public Builder setNodeTemplateIds(String[] nodeTemplateIds){
+        public Builder setNodeTemplateIds(List<String> nodeTemplateIds){
             this.nodeTemplateIds = nodeTemplateIds;
             return this;
+        }
+
+
+
+        @NonNull
+        public List<String> getNodeTemplateIds() {
+            if (nodeTemplateIds == null) {
+                nodeTemplateIds = new ArrayList<String>();
+            }
+            return this.nodeTemplateIds;
         }
 
         @Override
