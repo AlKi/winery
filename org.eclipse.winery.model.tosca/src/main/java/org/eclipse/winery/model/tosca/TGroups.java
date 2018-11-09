@@ -27,12 +27,12 @@ import java.util.Objects;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "tGroups", propOrder = {
-    "group"
+    "groups"
 })
 public class TGroups {
 
-    @XmlElement(name = "Group", required = true)
-    protected List<TGroup> group;
+    @XmlElement(name = "Groups", required = true)
+    protected List<TGroup> groups;
     @XmlAttribute(name = "targetNamespace")
     @XmlSchemaType(name = "anyURI")
     protected String targetNamespace;
@@ -42,21 +42,21 @@ public class TGroups {
         if (this == o) return true;
         if (!(o instanceof TGroups)) return false;
         TGroups tPlans = (TGroups) o;
-        return Objects.equals(group, tPlans.group) &&
+        return Objects.equals(groups, tPlans.groups) &&
             Objects.equals(targetNamespace, tPlans.targetNamespace);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(group, targetNamespace);
+        return Objects.hash(groups, targetNamespace);
     }
 
     @NonNull
-    public List<TGroup> getGroup() {
-        if (group == null) {
-            group = new ArrayList<TGroup>();
+    public List<TGroup> getGroups() {
+        if (groups == null) {
+            groups = new ArrayList<TGroup>();
         }
-        return this.group;
+        return this.groups;
     }
     
     @Nullable

@@ -31,6 +31,7 @@ import { TopologyModelerConfiguration } from './models/topologyModelerConfigurat
 import { ToastrService } from 'ngx-toastr';
 import { GroupsModalData } from './models/groupsModalData';
 import { TopologyRendererState } from './redux/reducers/topologyRenderer.reducer';
+import { WineryActions } from './redux/actions/winery.actions';
 
 /**
  * This is the root component of the topology modeler.
@@ -69,7 +70,8 @@ export class WineryComponent implements OnInit {
                 public backendService: BackendService,
                 private ngRedux: NgRedux<IWineryState>,
                 private alert: ToastrService,
-                private activatedRoute: ActivatedRoute) {
+                private activatedRoute: ActivatedRoute,
+                private actions: WineryActions) {
         this.subscriptions.push(this.ngRedux.select(state => state.wineryState.hideNavBarAndPaletteState)
             .subscribe(hideNavBar => this.hideNavBarState = hideNavBar));
         this.subscriptions.push(this.ngRedux.select(state => state.topologyRendererState)
@@ -121,6 +123,10 @@ export class WineryComponent implements OnInit {
     initEntityType(entityTypeJSON: Array<any>, entityType: string): void {
         if (!entityTypeJSON || entityTypeJSON.length === 0) {
             this.alert.info('No ' + entityType + ' available!');
+        }
+        // initialize, in case no proper answer was received
+        if(this.entityTypes.groups == undefined) {
+            this.entityTypes.groups = [];
         }
 
         switch (entityType) {
@@ -230,7 +236,12 @@ export class WineryComponent implements OnInit {
             }
             case 'groups': {
                 this.entityTypes.groups = entityTypeJSON;
-                break;
+                if((this.entityTypes.groups == null) || (this.entityTypes.groups == undefined)){
+                    this.entityTypes.groups = {groups: []};
+                }
+                this.ngRedux.dispatch(this.actions.modifyGroups(this.entityTypes.groups));
+                console.log("initialized groups with:");
+                console.log(this.entityTypes.groups);
             }
             case 'groupTypes': {
                 this.entityTypes.groupTypes = entityTypeJSON;

@@ -23,7 +23,7 @@
         <accordion-group
             class="card-header-node-accordions"
             #groups
-            panelClass="accordionGroupPanel" *ngFor="let group of groupSidebarState.groups">
+            panelClass="accordionGroupPanel" *ngFor="let group of groups.groups">
             <div accordion-heading (click)="setGroupSelected(group)">
                 {{ group.name }}:{{ group.type }}
             </div>

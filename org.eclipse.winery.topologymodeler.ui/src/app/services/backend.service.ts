@@ -16,7 +16,8 @@ import { Injectable } from '@angular/core';
 import { backendBaseURL, hostURL } from '../models/configuration';
 import { Subject } from 'rxjs/Subject';
 import { isNullOrUndefined } from 'util';
-import { EntityType, TTopologyTemplate, Visuals } from '../models/ttopology-template';
+import { EntityType, TTopologyTemplate, Visuals} from '../models/ttopology-template';
+import { TGroupModel} from "../models/groupModel";
 import { QNameWithTypeApiData } from '../models/generateArtifactApiData';
 import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { urlElement } from '../models/enums';
@@ -161,7 +162,7 @@ export class BackendService {
         }
     }
 
-    saveGroups(groups: any): Observable<HttpResponse<string>> {
+    saveGroups(groups: {groups: Array<TGroupModel>}): Observable<HttpResponse<string>> {
         if (this.configuration) {
             const headers = new HttpHeaders().set('Content-Type', 'application/json');
             const url = this.serviceTemplateURL + '/groups';

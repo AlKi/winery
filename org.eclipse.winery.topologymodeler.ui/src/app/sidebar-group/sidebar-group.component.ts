@@ -35,9 +35,8 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
 
 import { BackendService } from '../services/backend.service';
 import { GroupsModalData } from '../models/groupsModalData';
-import { TNodeTemplate } from '../models/ttopology-template';
 import { ModalDirective } from 'ngx-bootstrap';
-import {scalarMult} from "tweetnacl";
+import {TGroupModel} from "../models/groupModel";
 
 /**
  * This is the right sidebar, node groups can be managed
@@ -65,9 +64,9 @@ import {scalarMult} from "tweetnacl";
 export class SidebarGroupComponent implements OnInit, OnDestroy {
     properties: Subject<string> = new Subject<string>();
     sidebarSubscription: Subscription;
-    groupSidebarState: any;
+    groupSidebarState: TGroupSidebarState;
     sidebarAnimationStatus: string;
-    selectedGroup: any;
+    selectedGroup: TGroupModel;
     keyOfEditedKVProperty: Subject<string> = new Subject<string>();
     subscriptions: Array<Subscription> = [];
     selectedNodesFromSubscription: Array<string>;
@@ -75,6 +74,9 @@ export class SidebarGroupComponent implements OnInit, OnDestroy {
     backend: BackendService;
 
     groupProperties: any;
+
+    // TODO: This is TYPEscript, so properly type this! (more properties than just groups...
+    groups: {groups: TGroupModel[]};
 
     @Input() groupsModalData: GroupsModalData;
 
@@ -89,6 +91,7 @@ export class SidebarGroupComponent implements OnInit, OnDestroy {
                 private backendService: BackendService) {
         this.backend = backendService;
         this.ngRedux = $ngRedux;
+        this.groups = {groups: []};
     }
 
     /**
@@ -96,13 +99,11 @@ export class SidebarGroupComponent implements OnInit, OnDestroy {
      * @param selection
      */
     addNodes(selection) {
-        console.log("selection:");
-        console.log(JSON.stringify(selection));
 
         console.log("this.selectedNodesFromSubscription:");
         console.log(JSON.stringify(this.selectedNodesFromSubscription));
 
-        this.selectedGroup['nodeTemplates'] = JSON.parse(JSON.stringify(this.selectedNodesFromSubscription));
+        this.selectedGroup.nodeTemplateIds = JSON.parse(JSON.stringify(this.selectedNodesFromSubscription));
         console.log("this.selectedGroup:");
         console.log(JSON.stringify(this.selectedGroup));
     }
@@ -111,13 +112,21 @@ export class SidebarGroupComponent implements OnInit, OnDestroy {
     deleteGroup() {
         const groupId = this.selectedGroup.id;
         let removeIndex = -1;
-        for (let index = 0; index < this.groupSidebarState.groups.length; index++) {
-            if (this.groupSidebarState.groups[index].id === groupId) {
+        for (let index = 0; index < this.groups.groups.length; index++) {
+            if (this.groups.groups[index].id === groupId) {
                 removeIndex = index;
+                break;
             }
         }
-
-        this.groupSidebarState.groups.splice(removeIndex, 1);
+        // abort if something went wrong and no group was found
+        if(removeIndex == -1){
+            console.log("ERROR deleting group. Did not find any with id '" + JSON.stringify(this.selectedGroup.id) + "'");
+            return;
+        }
+        // remove group from array
+        this.groups.groups.splice(removeIndex, 1);
+        // update array to global state
+        this.$ngRedux.dispatch(this.actions.modifyGroups(this.groups));
     }
 
     addGroup() {
@@ -125,13 +134,20 @@ export class SidebarGroupComponent implements OnInit, OnDestroy {
         const groupName = this.groupsModalData.name;
         const groupType = this.groupsModalData.type;
 
-        const newGroup = {
+        const newGroup = new TGroupModel(groupId, groupName, '{' + JSON.parse(groupType)['namespace'] + '}' + JSON.parse(groupType)['id']);
+        newGroup.properties= this.fetchProperties(groupType);
+        newGroup.any = new Array();
+        newGroup.documentation = new Array();
+        newGroup.otherAttributes = {};
+        /*{
             id: groupId, any: new Array(), documentation: new Array(), otherAttributes: {}, name: groupName,
             type: '{' + JSON.parse(groupType)['namespace'] + '}' + JSON.parse(groupType)['id'],
             properties: this.fetchProperties(groupType)
-        };
-
-        this.groupSidebarState.groups.push(newGroup);
+        };*/
+        // add new group to local array of groups
+        this.groups.groups.push(newGroup);
+        // update array to global state
+        this.$ngRedux.dispatch(this.actions.modifyGroups(this.groups));
     }
 
     /**
@@ -164,7 +180,8 @@ export class SidebarGroupComponent implements OnInit, OnDestroy {
     }
 
     saveGroups() {
-        this.backendService.saveGroups({ group: this.groupSidebarState.groups }).subscribe(res => {
+        this.backendService.saveGroups(this.groups).subscribe(res => {
+           console.log(res);
         });
     }
 
@@ -222,15 +239,33 @@ export class SidebarGroupComponent implements OnInit, OnDestroy {
                 }));
             }));
 
+        // always be up to date and know which nodes are selected. Needed when setting the nodes of a group
         this.subscriptions.push(this.$ngRedux.select(wineryState => wineryState.wineryState.selectedNodesIds)
             .subscribe(selectedNodeIds => {
                     this.selectedNodesFromSubscription = selectedNodeIds;
                 }
             ));
-        //console.log(JSON.stringify(this.groupsModalData));
+
+        // always know all groups. Part of the state so other components can use it as well,
+        // e.g. for hiding/showing/substituting the nodes of this group
+        this.subscriptions.push(this.ngRedux.select(state => state.wineryState.groups)
+            .subscribe(currentGroups => {
+                    this.groups = currentGroups;
+                    console.log("currentGroups:");
+                    console.log(currentGroups);
+                }
+            ));
+
     }
 
     ngOnDestroy() {
         this.subscription.unsubscribe();
+    }
+}
+
+export class TGroupSidebarState{
+    public groups: {groups: TGroupModel[]};
+    constructor(){
+        this.groups = {groups: []};
     }
 }

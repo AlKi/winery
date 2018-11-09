@@ -215,7 +215,7 @@ public class TServiceTemplate extends HasId implements HasName, HasTargetNamespa
             return this;
         }
 
-        public Builder setPlans(TGroups groups) {
+        public Builder setGroups(TGroups groups) {
             this.groups = groups;
             return this;
         }

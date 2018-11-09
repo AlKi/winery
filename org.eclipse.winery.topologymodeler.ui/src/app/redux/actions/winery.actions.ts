@@ -17,6 +17,7 @@ import { Injectable } from '@angular/core';
 import { TNodeTemplate, TRelationshipTemplate, Visuals } from '../../models/ttopology-template';
 import { TDeploymentArtifact } from '../../models/artifactsModalData';
 import { TPolicy } from '../../models/policiesModalData';
+import {TGroupModel} from "../../models/groupModel";
 
 export interface SendPaletteOpenedAction extends Action {
     paletteOpened: boolean;
@@ -143,6 +144,10 @@ export interface CreateGroupAction extends Action {
     };
 }
 
+export interface ModifyGroupsAction extends Action {
+    groups: {groups:TGroupModel[]};
+}
+
 export interface SetCababilityAction extends Action {
     nodeCapability: {
         nodeId: string,
@@ -249,6 +254,7 @@ export class WineryActions {
     static SET_NODE_VISUALS = 'SET_NODE_VISUALS';
     static SET_GROUP = 'SET_GROUP';
     static CREATE_GROUP = 'CREATE_GROUP';
+    static MODIFY_GROUPS= 'MODIFY_GROUPS';
     static SET_SELECTED_NODE_IDS = 'SET_SELECTED_NODE_IDS';
 
     sendPaletteOpened: ActionCreator<SendPaletteOpenedAction> =
@@ -346,6 +352,11 @@ export class WineryActions {
         ((newGroup) => ({
             type: WineryActions.SET_GROUP,
             groupProperty: newGroup.group
+        }));
+    modifyGroups: ActionCreator<ModifyGroupsAction> =
+        ((newGroups) => ({
+            type: WineryActions.MODIFY_GROUPS,
+            groups: newGroups,
         }));
     /*openCreateGroupModal: ActionCreator<CreateGroupAction> =
         ((newGroupData) => ({

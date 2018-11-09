@@ -26,7 +26,6 @@ export class AbstractTTemplate {
 export class TTopologyTemplate extends AbstractTTemplate {
     nodeTemplates: Array<TNodeTemplate> = [];
     relationshipTemplates: Array<TRelationshipTemplate> = [];
-    groups: Array<TGroup> = [];
 }
 
 /**
@@ -202,7 +201,7 @@ export class Visuals {
 
 /**
  * This is the data model for groups
- */
+ *
 export class TGroup{
     constructor(
         public localName: string,
@@ -211,4 +210,4 @@ export class TGroup{
     }
     nodeIds: string[] = [];
     relationshipIds: string[] = [];
-}
+}*/

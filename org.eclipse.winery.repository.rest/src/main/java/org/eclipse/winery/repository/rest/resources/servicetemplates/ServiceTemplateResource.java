@@ -30,6 +30,8 @@ import javax.xml.bind.JAXBException;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.ParserConfigurationException;
 
+import io.swagger.util.Json;
+import jdk.nashorn.internal.objects.NativeJSON;
 import org.eclipse.winery.common.ids.definitions.ServiceTemplateId;
 import org.eclipse.winery.compliance.checking.ServiceTemplateCheckingResult;
 import org.eclipse.winery.compliance.checking.ServiceTemplateComplianceRuleRuleChecker;
@@ -135,6 +137,8 @@ public class ServiceTemplateResource extends AbstractComponentInstanceResourceCo
     @PUT
     @Path("groups")
     public Response setGroups(TGroups groups) {
+        System.out.println("got a PUT request to .../groups");
+        System.out.println(Json.pretty(groups));
         this.getServiceTemplate().setGroups(groups);
         return RestUtils.persist(this);
     }
@@ -143,6 +147,8 @@ public class ServiceTemplateResource extends AbstractComponentInstanceResourceCo
     @Path("groups")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getGroups() {
+        System.out.println("got a GET request to .../groups");
+        System.out.println(Json.pretty(this.getServiceTemplate().getGroups()));
         return Response.ok(this.getServiceTemplate().getGroups()).build();
     }
 

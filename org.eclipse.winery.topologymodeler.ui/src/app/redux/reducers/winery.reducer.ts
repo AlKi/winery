@@ -18,11 +18,12 @@ import {
     HideNavBarAndPaletteAction, IncMaxInstances, IncMinInstances, SaveNodeTemplateAction, SaveRelationshipAction, SendCurrentNodeIdAction,
     SendPaletteOpenedAction, SetCababilityAction, SetDeploymentArtifactAction, SetNodeVisuals, SetPolicyAction, SetPropertyAction, SetRequirementAction,
     SetSelectedNodeIds, SetTargetLocation, SidebarMaxInstanceChanges, SidebarMinInstanceChanges, SidebarNodeNamechange, SidebarStateAction, UpdateNodeCoordinatesAction,
-    UpdateRelationshipNameAction, WineryActions, GroupSidebarStateAction, CreateGroupAction
+    UpdateRelationshipNameAction, WineryActions, GroupSidebarStateAction, CreateGroupAction, ModifyGroupsAction
 } from '../actions/winery.actions';
 import { TNodeTemplate, TRelationshipTemplate, TTopologyTemplate, Visuals } from '../../models/ttopology-template';
 import { TDeploymentArtifact } from '../../models/artifactsModalData';
 import { GroupsModalData } from '../../models/groupsModalData';
+import {TGroupModel} from "../../models/groupModel";
 
 export interface WineryState {
     currentPaletteOpenedState: boolean;
@@ -36,6 +37,7 @@ export interface WineryState {
     createGroupModalData: GroupsModalData;
     // same here...
     selectedNodesIds: string[];
+    groups: {groups: TGroupModel[]};
 }
 
 export const INITIAL_WINERY_STATE: WineryState = {
@@ -64,7 +66,8 @@ export const INITIAL_WINERY_STATE: WineryState = {
         type: ''
     },
     createGroupModalData: new GroupsModalData(),
-    selectedNodesIds: []
+    selectedNodesIds: [],
+    groups: {groups: []}
 };
 
 /**
@@ -108,6 +111,14 @@ export const WineryReducer =
                     ...lastState,
                     createGroupModalData: createGroupModalData
                 };
+            case WineryActions.MODIFY_GROUPS: {
+                const groups: any = (<ModifyGroupsAction>action).groups;
+
+                return <WineryState>{
+                    ...lastState,
+                    groups: groups,
+                    };
+                }
             case WineryActions.CHANGE_MIN_INSTANCES:
                 const sideBarNodeId: any = (<SidebarMinInstanceChanges>action).minInstances.id;
                 const minInstances: any = (<SidebarMinInstanceChanges>action).minInstances.count;

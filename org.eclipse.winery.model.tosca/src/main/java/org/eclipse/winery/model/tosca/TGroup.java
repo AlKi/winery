@@ -26,12 +26,13 @@ import javax.xml.bind.annotation.*;
 import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import javax.xml.namespace.QName;
+import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Objects;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "tGroup", propOrder = {
-    "nodeTemplates"
+    "nodeTemplateIds"
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(
@@ -51,11 +52,12 @@ public class TGroup extends TEntityTemplate {
     
     @XmlAttribute(name = "name")
     protected String name;
-    
+
     @Nullable
-    @XmlElementWrapper(name = "NodeTemplates")
-    @XmlElement(name = "NodeTemplate", type = TNodeTemplate.class)
-    protected List<TNodeTemplate> nodeTemplates;
+    @XmlElementWrapper(name = "NodeTemplateIds")
+    @XmlElement(name = "NodeTemplateIds", type = String[].class)
+    protected String[] nodeTemplateIds;
+
     
     public TGroup() {
 
@@ -65,6 +67,7 @@ public class TGroup extends TEntityTemplate {
         this.id = builder.id;
         this.name = builder.name;
         this.type = builder.groupType;
+        this.nodeTemplateIds = builder.nodeTemplateIds;
     }
 
     @Override
@@ -119,12 +122,12 @@ public class TGroup extends TEntityTemplate {
         this.getProperties().getKVProperties();
     }
 
-    public List<TNodeTemplate> getNodeTemplates() {
-        return nodeTemplates;
+    public String[] getNodeTemplateIds() {
+        return nodeTemplateIds;
     }
 
-    public void setNodeTemplates(List<TNodeTemplate> nodeTemplates) {
-        this.nodeTemplates = nodeTemplates;
+    public void setNodeTemplateIds(String[] nodeTemplateIds) {
+        this.nodeTemplateIds = nodeTemplateIds;
     }
     
     public void accept(Visitor visitor) {
@@ -135,11 +138,13 @@ public class TGroup extends TEntityTemplate {
         private String id;
         private String name;
         private QName groupType;
+        private String[] nodeTemplateIds;
 
-        public Builder(String id, String name, QName groupType) {
+        public Builder(String id, String name, QName groupType, String[] nodeTemplateIds) {
             this.id = id;
             this.name = name;
             this.groupType = groupType;
+            this.nodeTemplateIds = nodeTemplateIds;
         }
 
         public Builder setName(String name) {
@@ -151,9 +156,14 @@ public class TGroup extends TEntityTemplate {
             this.id= id;
             return this;
         }
-        
+
         public Builder setGroupType(QName groupType){
             this.groupType = groupType;
+            return this;
+        }
+
+        public Builder setNodeTemplateIds(String[] nodeTemplateIds){
+            this.nodeTemplateIds = nodeTemplateIds;
             return this;
         }
 
