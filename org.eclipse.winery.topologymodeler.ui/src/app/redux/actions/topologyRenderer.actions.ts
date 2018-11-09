@@ -24,6 +24,10 @@ export interface HideNodesAndRelationshipsAction extends Action {
     relationshipsToHide: string[];
 }
 
+export interface ModifyGroupsVisibilityAction extends Action {
+    buttonId: string;
+}
+
 /**
  * Actions of the topologyRenderer
  */
@@ -55,6 +59,7 @@ export class TopologyRendererActions {
     static TOGGLE_HIDE_NONCOMPUTING = 'TOGGLE_HIDE_NONCOMPUTING';
     static HIDE_NODES_AND_RELATIONSHIPS = 'HIDE_NODES_AND_RELATIONSHIPS';
     static GROUP_NODES = 'GROUP_NODES';
+    static GROUPS_VISIBILITY_MODIFIED = "GROUPS_VISIBILITY_MODIFIED";
 
     togglePolicies(): Action {
         return { type: TopologyRendererActions.TOGGLE_POLICIES };
@@ -158,5 +163,10 @@ export class TopologyRendererActions {
     }
     toggleHideNoncomputing(): Action {
         return {type: TopologyRendererActions.TOGGLE_HIDE_NONCOMPUTING};
+    }
+    modifyGroupsVisibility(groupId: string): ModifyGroupsVisibilityAction{
+        return {type: TopologyRendererActions.GROUPS_VISIBILITY_MODIFIED,
+                buttonId: groupId
+        };
     }
 }

@@ -13,7 +13,7 @@
  ********************************************************************************/
 
 import { Action } from 'redux';
-import { HighlightNodesAction, HideNodesAndRelationshipsAction, TopologyRendererActions } from '../actions/topologyRenderer.actions';
+import { HighlightNodesAction, HideNodesAndRelationshipsAction, TopologyRendererActions, ModifyGroupsVisibilityAction } from '../actions/topologyRenderer.actions';
 
 export interface TopologyRendererState {
     buttonsState: {
@@ -39,6 +39,8 @@ export interface TopologyRendererState {
         substituteHardwareButton?: boolean;
         substituteSoftwareButton?: boolean;
         substituteSelectionButton?: boolean;
+        // has .[groupid] properties, which are boolean
+        hideGroupButtonStates?: any;
     };
     nodesToSelect?: string[];
     nodesToHide: string[];
@@ -68,7 +70,8 @@ export const INITIAL_TOPOLOGY_RENDERER_STATE: TopologyRendererState = {
         hideSoftwareButton: false,
         substituteHardwareButton: false,
         substituteSoftwareButton: false,
-        substituteSelectionButton: false
+        substituteSelectionButton: false,
+        hideGroupButtonStates: {}
     },
     nodesToHide: [""],
     relationshipsToHide: [""]
@@ -223,10 +226,7 @@ export const TopologyRendererReducer =
             case TopologyRendererActions.HIDE_NODES_AND_RELATIONSHIPS:
                 const nodesAndRelationshipsData = <HideNodesAndRelationshipsAction> action;
 
-                console.log("NodesAndRelationshipsData:\n" + JSON.stringify(nodesAndRelationshipsData));
-
                 if (nodesAndRelationshipsData.nodesToHide && nodesAndRelationshipsData.relationshipsToHide) {
-                    console.log("changing nodesToHide and relationshipsToHide in global state");
                     return {
                         ...lastState,
                         nodesToHide: nodesAndRelationshipsData.nodesToHide,
@@ -261,6 +261,13 @@ export const TopologyRendererReducer =
                         hideSoftwareButton: !lastState.buttonsState.hideSoftwareButton
                     }
                 };
+            case TopologyRendererActions.GROUPS_VISIBILITY_MODIFIED: {
+                const myAction = <ModifyGroupsVisibilityAction> action;
+                const state = lastState;
+                state.buttonsState.hideGroupButtonStates[myAction.buttonId] = !state.buttonsState.hideGroupButtonStates[myAction.buttonId];
+
+                return state;
+            }
         }
         return lastState;
     };

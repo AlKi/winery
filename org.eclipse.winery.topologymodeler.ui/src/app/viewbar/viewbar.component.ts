@@ -20,12 +20,12 @@ import { TopologyRendererActions } from '../redux/actions/topologyRenderer.actio
 import { IWineryState } from '../redux/store/winery.store';
 import { BackendService } from '../services/backend.service';
 import { Subscription } from 'rxjs';
-import { Hotkey, HotkeysService } from 'angular2-hotkeys';
-import {INITIAL_TOPOLOGY_RENDERER_STATE, TopologyRendererState} from '../redux/reducers/topologyRenderer.reducer';
+import { HotkeysService } from 'angular2-hotkeys';
+import { TopologyRendererState} from '../redux/reducers/topologyRenderer.reducer';
 import { WineryActions } from '../redux/actions/winery.actions';
-import { TTopologyTemplate, TNodeTemplate } from '../models/ttopology-template';
 import { EntityTypesModel } from '../models/entityTypesModel';
 import { isNullOrUndefined } from 'util';
+import {TGroupModel} from "../models/groupModel";
 
 /**
  * The viewbar of the topologymodeler.
@@ -60,6 +60,9 @@ export class ViewbarComponent implements OnDestroy {
     subscriptions: Array<Subscription> = [];
     splittingOngoing: boolean;
     matchingOngoing: boolean;
+    groups: TGroupModel[];
+    nodeIdsToHide: string[] = [];
+    relationshipIdsToHide: string[] = [];
 
     constructor(private alert: ToastrService,
                 private ngRedux: NgRedux<IWineryState>,
@@ -71,6 +74,8 @@ export class ViewbarComponent implements OnDestroy {
             .subscribe(newButtonsState => this.setButtonsState(newButtonsState)));
         this.subscriptions.push(ngRedux.select(currentState => currentState.wineryState.currentJsonTopology)
             .subscribe(topologyTemplate => this.unformattedTopologyTemplate = topologyTemplate));
+        this.subscriptions.push(ngRedux.select(currentState => currentState.wineryState.groups.groups)
+            .subscribe(groups => this.updateGroups(groups)));
     }
 
     /**
@@ -131,16 +136,24 @@ export class ViewbarComponent implements OnDestroy {
             }
             case 'substituteSelection': {
                 this.ngRedux.dispatch(this.actions.toggleSubstituteSelection());
-                console.log(JSON.stringify(this.entityTypes.groups.group));
+                console.log(JSON.stringify(this.groups));
                 break;
             }
             default:{
                 // most probably a "hide group" button from dropdown, if so...
                 if(event.target.id.startsWith("hideGroup")){
-                    // ...remove the "hideGroup" prefix to get the group name (TODO: Group ID, when the backend works!)
-                    let groupName: string = event.target.id.replace("hideGroup", "");
-                    console.log("hiding nodes of group " + groupName);
-                    this.hideGroupByName(groupName);
+                    // ...remove the "hideGroup" prefix to get the group id
+                    let groupId: string = event.target.id.replace("hideGroup", "");
+                    // hide or show the groups nodes according to the button's toggle state
+                    // beware: global state gets changed afterwards, so we need to work with the previous, not yet toggled button state
+                    if(this.viewbarButtonsState.buttonsState.hideGroupButtonStates[groupId] == false){
+                        console.log("hiding nodes of group " + groupId);
+                        this.hideGroupById(groupId);
+                    }else{
+                        console.log("un-hiding nodes of group " + groupId);
+                        this.showGroupById(groupId);
+                    }
+                    this.ngRedux.dispatch(this.actions.modifyGroupsVisibility(groupId));
                 }
             }
         }
@@ -156,29 +169,14 @@ export class ViewbarComponent implements OnDestroy {
 
 
     /**
-     * hides nodes of first group with given name - TODO: remove when backend bug is fixed
-     * @param groupName
-     */
-    hideGroupByName(groupName: string){
-        console.log(JSON.stringify(this.entityTypes));
-        for(let groupId=0; groupId<this.entityTypes.groups.group.length; groupId++){
-            if(this.entityTypes.groups.group[groupId].name === groupName){
-                this.hideGroup(this.entityTypes.groups.group[groupId]);
-                return;
-            }
-        }
-    }
-
-
-    /**
      * hides nodes of group with given id
      * @param groupName
      */
     hideGroupById(groupId: string){
-        console.log(JSON.stringify(this.entityTypes));
-        for(let groupIndex=0; groupIndex<this.entityTypes.groups.group.length; groupIndex++){
-            if(this.entityTypes.groups.group[groupIndex].name === groupId){
-                this.hideGroup(this.entityTypes.groups.group[groupIndex]);
+        console.log(JSON.stringify(this.groups));
+        for(let groupIndex=0; groupIndex<this.groups.length; groupIndex++){
+            if(this.groups[groupIndex].id === groupId){
+                this.hideGroup(this.groups[groupIndex]);
                 return;
             }
         }
@@ -188,23 +186,83 @@ export class ViewbarComponent implements OnDestroy {
      * hides all nodes of a given group
      * @param group
      */
-    hideGroup(group){
-        var nodeIdsToHide: string[] = [];
+    hideGroup(group: TGroupModel){
         // iterate over all node components
         for( let nodeIndex=0; nodeIndex<this.unformattedTopologyTemplate.nodeTemplates.length; nodeIndex++ ){
-            for(let groupNodeIndex=0; groupNodeIndex<group.nodes.length(); groupNodeIndex++){
-                if(group.nodes[groupNodeIndex].id === this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id){
-                    // add this node to the list of nodes to be set invisible
-                    nodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
+            for(let groupNodeIndex = 0; groupNodeIndex<group.nodeTemplateIds.length; groupNodeIndex++){
+                if(group.nodeTemplateIds[groupNodeIndex] === this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id) {
+                    // add this node to the list of nodes to be set invisible, if it is not already on the list
+                    let nodeNotHidden: boolean = true;
+                    for (let nodeId in this.nodeIdsToHide) {
+                        console.log("testing node id " + nodeId)
+                        if (nodeId == this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id) {
+                            nodeNotHidden = false;
+                            break;
+                        }
+                    }
+                    if (nodeNotHidden) {
+                    this.nodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
+                    }
                 }
             }
         }
-        this.alert.info("Hiding " + nodeIdsToHide.length + " Nodes");
+        this.alert.info("Hiding " + this.nodeIdsToHide.length + " Nodes");
         //console.log("unformattedTopologyTemplate: " +JSON.stringify(this.unformattedTopologyTemplate));
-        var relationshipIdsToHide = this.checkRelationshipsToHide(nodeIdsToHide);
-        console.log("hiding nodes: " + JSON.stringify(nodeIdsToHide));
-        console.log("hiding relationships: " + JSON.stringify(relationshipIdsToHide));
-        this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(nodeIdsToHide, relationshipIdsToHide));
+        this.checkRelationshipsToHide();
+        console.log("hiding nodes: " + JSON.stringify(this.nodeIdsToHide));
+        console.log("hiding relationships: " + JSON.stringify(this.relationshipIdsToHide));
+        this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
+    }
+
+    /**
+     * hides nodes of group with given id
+     * @param groupName
+     */
+    showGroupById(groupId: string){
+        console.log(JSON.stringify(this.groups));
+        for(let groupIndex=0; groupIndex<this.groups.length; groupIndex++){
+            if(this.groups[groupIndex].id === groupId){
+                this.showGroup(this.groups[groupIndex]);
+                return;
+            }
+        }
+    }
+
+    /**
+     * hides all nodes of a given group
+     * @param group
+     */
+    showGroup(group: TGroupModel){
+        let nodeIdsToShow: string[] = [];
+        // iterate over all node components
+        for( let nodeIndex=0; nodeIndex<this.unformattedTopologyTemplate.nodeTemplates.length; nodeIndex++ ){
+            for(let groupNodeIndex = 0; groupNodeIndex<group.nodeTemplateIds.length; groupNodeIndex++){
+                if(group.nodeTemplateIds[groupNodeIndex] === this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id){
+                    // add this node to the list of nodes to be set invisible
+                    nodeIdsToShow.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
+                }
+            }
+        }
+        this.alert.info("Showing " + nodeIdsToShow.length + " Nodes");
+
+        // remove these nodes from the nodes to hide, if they are on it
+        for (let nodeId = 0; nodeId < this.nodeIdsToHide.length; nodeId++) {
+            for(let nodeIndex = 0; nodeIndex < nodeIdsToShow.length; nodeIndex++){
+                if (this.nodeIdsToHide[nodeId] == nodeIdsToShow[nodeIndex]) {
+                    // remove this id by removing the element at its position
+                    this.nodeIdsToHide.splice(nodeId, 1);
+                    // we removed one component, so go on at the same index
+                    nodeId--;
+                    break;
+                }
+
+            }
+        }
+
+        this.checkRelationshipsToHide();
+        console.log("hiding nodes: " + JSON.stringify(this.nodeIdsToHide));
+        console.log("hiding relationships: " + JSON.stringify(this.relationshipIdsToHide));
+        this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
     }
 
     /**
@@ -230,10 +288,10 @@ export class ViewbarComponent implements OnDestroy {
         }
         this.alert.info("Hiding " + nodeIdsToHide.length + " Nodes");
         //console.log("unformattedTopologyTemplate: " +JSON.stringify(this.unformattedTopologyTemplate));
-        var relationshipIdsToHide = this.checkRelationshipsToHide(nodeIdsToHide);
+        this.checkRelationshipsToHide();
         console.log("hiding nodes: " + JSON.stringify(nodeIdsToHide));
-        console.log("hiding relationships: " + JSON.stringify(relationshipIdsToHide));
-        this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(nodeIdsToHide, relationshipIdsToHide));
+        console.log("hiding relationships: " + JSON.stringify(this.relationshipIdsToHide));
+        this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
     }
 
     /**
@@ -285,20 +343,31 @@ export class ViewbarComponent implements OnDestroy {
     /**
      * checks all relationships for hidden sources/targets
      */
-    checkRelationshipsToHide(nodesToHide: string[]): string[]{
-        var relsToHide: string[] = [];
-        // iterate all nrelationshipTemplates and check, if a target or source is to be hidden. If so, add the relationship to the hidden ones as well
+    checkRelationshipsToHide(): void{
+        this.relationshipIdsToHide = [];
+        // iterate all relationshipTemplates and check, if a target or source is to be hidden. If so, add the relationship to the hidden ones as well
         for(let relTempIndex=0; relTempIndex<this.unformattedTopologyTemplate.relationshipTemplates.length; relTempIndex++){
             checkThisRelationship:
-            for(let hiddenNodeTypeIndex=0; hiddenNodeTypeIndex<nodesToHide.length; hiddenNodeTypeIndex++){
-                if((this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].sourceElement.ref === nodesToHide[hiddenNodeTypeIndex])
-                        || (this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].targetElement.ref === nodesToHide[hiddenNodeTypeIndex])){
-                    relsToHide.push(this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].id);
+            for(let hiddenNodeTypeIndex=0; hiddenNodeTypeIndex<this.nodeIdsToHide.length; hiddenNodeTypeIndex++){
+                if((this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].sourceElement.ref === this.nodeIdsToHide[hiddenNodeTypeIndex])
+                        || (this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].targetElement.ref === this.nodeIdsToHide[hiddenNodeTypeIndex])){
+                    this.relationshipIdsToHide.push(this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].id);
                     break checkThisRelationship;
                 }
             }
         }
-        return relsToHide;
+    }
+
+
+    updateGroups(groups: TGroupModel[]){
+        this.groups = groups;
+        this.viewbarButtonsState.buttonsState.hideGroupButtonStates = {};
+        // initialize button states for dropdown menus
+        for(let groupId = 0; groupId < groups.length; groupId++){
+            this.viewbarButtonsState.buttonsState.hideGroupButtonStates[groups[groupId].id] = false;
+        }
+        this.setButtonsState(this.viewbarButtonsState);
+        console.log("groups set");
     }
 
     /**

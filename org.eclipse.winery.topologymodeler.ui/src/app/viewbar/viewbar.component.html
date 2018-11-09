@@ -94,14 +94,13 @@
                 Hide Groups <span class="caret"></span>
             </button>
             <ul *dropdownMenu class="dropdown-menu" role="menu">
-                <li *ngFor="let group of entityTypes.groups.group" role="menuitem">
-                    <!-- TODO: add mention of group.id in tooltip and replace group.name by group.id in button when backend works!!! -->
-                    <button style="cursor: pointer"
-                            tooltip="Hide all nodes of group '{{group.name}}'. Group ID: TODO"
+                <li *ngFor="let group of groups" role="menuitem">
+                    <button [style.background-color]="getStyle(viewbarButtonsState.buttonsState.hideGroupButtonStates[group.id])"
+                            tooltip="Hide all nodes of group '{{group.name}}'. Group ID: {{group.id}}"
                             placement="left" class="dropdown-item"
                             (click)="toggleButton($event)"
-                            id="hideGroup{{group.name}}">
-                        {{group.name}}
+                            id="hideGroup{{group.id}}">
+                        {{group.name}} <br/> ID: {{group.id}}
                     </button>
                 </li>
             </ul>
