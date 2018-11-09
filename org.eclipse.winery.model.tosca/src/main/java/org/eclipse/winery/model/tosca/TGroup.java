@@ -40,23 +40,19 @@ import java.util.Objects;
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "fakeJacksonType")
-@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class TGroup extends TEntityTemplate {
-  
-   
-    @XmlAttribute(name = "id", required = true)
-    @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
-    @XmlID
-    @XmlSchemaType(name = "ID")
-    protected String id;
     
-    @XmlAttribute(name = "name")
+    
+    // id and type are handled by superclasses (TEntityTemplate and HasId)
+    
+    @XmlAttribute(name = "name", required = true)
     protected String name;
 
-    @Nullable
+    @NonNull
     @XmlElementWrapper(name = "NodeTemplateIds")
     @XmlElement(name = "NodeTemplateIds")
     protected List<String> nodeTemplateIds;
+
 
     
     public TGroup() {
@@ -64,7 +60,7 @@ public class TGroup extends TEntityTemplate {
     }
 
     public TGroup(Builder builder) {
-        this.id = builder.id;
+        super(builder);
         this.name = builder.name;
         this.type = builder.groupType;
         this.nodeTemplateIds = builder.nodeTemplateIds;
@@ -76,42 +72,25 @@ public class TGroup extends TEntityTemplate {
         if (!(o instanceof TGroup)) return false;
         if (!super.equals(o)) return false;
         TGroup tPlan = (TGroup) o;
-        return Objects.equals(id, tPlan.id) &&
+        return Objects.equals(super.getId(), tPlan.getId()) &&
             Objects.equals(name, tPlan.name) &&
             Objects.equals(type, tPlan.type);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), id, name, type);
+        return Objects.hash(super.hashCode(), super.getId(), name, type);
     }
     
-    @NonNull
-    public String getId() {
-        return id;
-    }
-
-    public void setId(@NonNull String value) {
-        this.id = value;
-    }
 
     @Nullable
     public String getName() {
         return name;
     }
 
-    public void setName(@Nullable String value) {
+    public void setName(@NonNull String value) {
         this.name = value;
     }
-
-   /* @NonNull
-    public String getGroupType() {
-        return groupType;
-    }
-
-    public void setGroupType(@NonNull String value) {
-        this.groupType = Objects.requireNonNull(value);
-    } */
     
     public TEntityTemplate.Properties getProperties() {
         return properties;
@@ -134,35 +113,20 @@ public class TGroup extends TEntityTemplate {
         visitor.visit(this);
    }
 
-    public static class Builder extends TExtensibleElements.Builder<Builder> {
-        private String id;
+    public static class Builder extends TEntityTemplate.Builder<Builder> {
         private String name;
         private QName groupType;
         private List<String> nodeTemplateIds;
-
-        public Builder(String id, String name, QName groupType, List<String> nodeTemplateIds) {
-            this.id = id;
-            this.name = name;
-            this.groupType = groupType;
-            System.out.println("nodeTemplateIds to load:");
-            System.out.println(nodeTemplateIds.toString());
-            this.nodeTemplateIds = nodeTemplateIds;
-        }
 
         public Builder setName(String name) {
             this.name = name;
             return this;
         }
         
-        public Builder setId(String id) {
-            this.id= id;
-            return this;
+        public Builder(String id, QName type) {
+            super(id, type);
         }
 
-        public Builder setGroupType(QName groupType){
-            this.groupType = groupType;
-            return this;
-        }
 
         public Builder setNodeTemplateIds(List<String> nodeTemplateIds){
             this.nodeTemplateIds = nodeTemplateIds;
