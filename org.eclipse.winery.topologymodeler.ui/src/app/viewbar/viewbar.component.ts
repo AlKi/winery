@@ -26,6 +26,7 @@ import { WineryActions } from '../redux/actions/winery.actions';
 import { EntityTypesModel } from '../models/entityTypesModel';
 import { isNullOrUndefined } from 'util';
 import {TGroupModel} from "../models/groupModel";
+import {TNodeTemplate, TRelationshipTemplate, Visuals} from "../models/ttopology-template";
 
 /**
  * The viewbar of the topologymodeler.
@@ -63,6 +64,8 @@ export class ViewbarComponent implements OnDestroy {
     groups: TGroupModel[];
     nodeIdsToHide: string[] = [];
     relationshipIdsToHide: string[] = [];
+    substitutionNodes: TNodeTemplate[] = [];
+    substitutionRelationships: TRelationshipTemplate[] = [];
 
     constructor(private alert: ToastrService,
                 private ngRedux: NgRedux<IWineryState>,
@@ -140,7 +143,7 @@ export class ViewbarComponent implements OnDestroy {
                 break;
             }
             default:{
-                // most probably a "hide group" button from dropdown, if so...
+                // most probably a "hide group" or "substitute group" button from dropdown, if so...
                 if(event.target.id.startsWith("hideGroup")){
                     // ...remove the "hideGroup" prefix to get the group id
                     let groupId: string = event.target.id.replace("hideGroup", "");
@@ -153,7 +156,20 @@ export class ViewbarComponent implements OnDestroy {
                         console.log("un-hiding nodes of group " + groupId);
                         this.showGroupById(groupId);
                     }
-                    this.ngRedux.dispatch(this.actions.modifyGroupsVisibility(groupId));
+                    this.ngRedux.dispatch(this.actions.modifyGroupsVisibilityButtonState(groupId));
+                }else if(event.target.id.startsWith("substituteGroup")){
+                    // ...remove the "substituteGroup" prefix to get the group id
+                    let groupId: string = event.target.id.replace("substituteGroup", "");
+                    // hide or show the groups nodes according to the button's toggle state
+                    // beware: global state gets changed afterwards, so we need to work with the previous, not yet toggled button state
+                    if(this.viewbarButtonsState.buttonsState.substituteGroupButtonStates[groupId] == false){
+                        console.log("substituting nodes of group " + groupId);
+                        this.substituteGroupById(groupId);
+                    }else{
+                        console.log("de-substituting group " + groupId);
+                        this.deSubstituteGroupById(groupId);
+                    }
+                    this.ngRedux.dispatch(this.actions.modifyGroupsSubstitutionButtonState(groupId));
                 }
             }
         }
@@ -194,7 +210,6 @@ export class ViewbarComponent implements OnDestroy {
                     // add this node to the list of nodes to be set invisible, if it is not already on the list
                     let nodeNotHidden: boolean = true;
                     for (let nodeId in this.nodeIdsToHide) {
-                        console.log("testing node id " + nodeId)
                         if (nodeId == this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id) {
                             nodeNotHidden = false;
                             break;
@@ -243,7 +258,7 @@ export class ViewbarComponent implements OnDestroy {
                 }
             }
         }
-        this.alert.info("Showing " + nodeIdsToShow.length + " Nodes");
+        this.alert.info("Showing " + nodeIdsToShow.length + " Nodes more");
 
         // remove these nodes from the nodes to hide, if they are on it
         for (let nodeId = 0; nodeId < this.nodeIdsToHide.length; nodeId++) {
@@ -263,6 +278,153 @@ export class ViewbarComponent implements OnDestroy {
         console.log("hiding nodes: " + JSON.stringify(this.nodeIdsToHide));
         console.log("hiding relationships: " + JSON.stringify(this.relationshipIdsToHide));
         this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
+    }
+
+    /**
+     * substitutes all nodes of a group by a new group node by
+     * a) hiding all nodes of the group
+     * b) hiding all relationships that go to or from one of these nodes
+     * c) adding a substitution node representing the group
+     * d) adding substitution relationships to or from the substitution node
+     * @param substituteGroupId
+     */
+    substituteGroupById(substituteGroupId: string){
+
+        let group: TGroupModel;
+
+        // find this group by its ID
+        for(let groupIndex=0; groupIndex<this.groups.length; groupIndex++){
+            if(this.groups[groupIndex].id === substituteGroupId){
+                group = this.groups[groupIndex];
+                break;
+            }
+        }
+        if(group == undefined){
+            this.alert.error("couldn't find group for substitution. Group ID: " + substituteGroupId);
+            return;
+        }
+
+
+        // find all relationships emerging from or going to nodes of this group to create substitutions from/to the
+        // substitution node
+        // therefor iterate over all node components and find any which have to be hidden
+        for( let nodeIndex=0; nodeIndex<this.unformattedTopologyTemplate.nodeTemplates.length; nodeIndex++ ){
+            for(let groupNodeIndex = 0; groupNodeIndex<group.nodeTemplateIds.length; groupNodeIndex++){
+                if(group.nodeTemplateIds[groupNodeIndex] === this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id) {
+                    // add this node to the list of nodes to be set invisible, if it is not already on the list
+                    let nodeNotHidden: boolean = true;
+                    for (let nodeId in this.nodeIdsToHide) {
+                        if (nodeId == this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id) {
+                            nodeNotHidden = false;
+                            break;
+                        }
+                    }
+                    // if not already on the list, add it
+                    if (nodeNotHidden) {
+                        this.nodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
+                    }
+                }
+            }
+        }
+        // check for any relationships to be hidden and update this.relationshipsToHide
+        this.checkRelationshipsToHide();
+
+        // create substitution node with this group's id and name
+        // TODO: check Visuals!
+        let groupSubstitutionNode: TNodeTemplate = new TNodeTemplate({}, group.id, "substitution", group.name, 1, 1, new Visuals("#303030", '',"","groupSubstitution",""));
+        this.substitutionNodes.push(groupSubstitutionNode);
+
+        let substitutionRelationships: TRelationshipTemplate[] = [];
+        // iterate all relationshipTemplates and check, if target or source is part of the substituted group. If so,
+        // add a substitution relationship to or from the substituted group.
+        // but don't do, if it is a group internal relationship
+        for(let relTempIndex=0; relTempIndex<this.unformattedTopologyTemplate.relationshipTemplates.length; relTempIndex++){
+            checkThisRelationship:
+            for(let hiddenNodeTypeIndex=0; hiddenNodeTypeIndex<this.nodeIdsToHide.length; hiddenNodeTypeIndex++){
+                if(this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].sourceElement.ref === this.nodeIdsToHide[hiddenNodeTypeIndex]){
+                    if(!(this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].targetElement.ref === this.nodeIdsToHide[hiddenNodeTypeIndex])){
+                        // if only the source is part of the group, add a substituted relationship to the list
+                        let relTemplate = this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex];
+                        this.substitutionRelationships.push(new TRelationshipTemplate({ref: groupSubstitutionNode.id},
+                                                                                                        relTemplate.targetElement,
+                                                                                                        relTemplate.name,
+                                                                                                        relTemplate.id,
+                                                                                                        relTemplate.type));
+                    }
+                }else if(this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].targetElement.ref === this.nodeIdsToHide[hiddenNodeTypeIndex]){
+                        // if only the target is part of the group, add a substituted relationship to the list
+                        let relTemplate = this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex];
+                        this.substitutionRelationships.push(new TRelationshipTemplate(relTemplate.sourceElement,
+                                                                                                        {ref: groupSubstitutionNode.id},
+                                                                                                        relTemplate.name,
+                                                                                                        relTemplate.id,
+                                                                                                        relTemplate.type));
+                }
+                break checkThisRelationship;
+            }
+        }
+        // hide groups nodes and their relationships
+        this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
+        // show substitution node and relationships
+        this.ngRedux.dispatch((this.actions.substituteGroups(this.substitutionNodes, this.substitutionRelationships)));
+        console.log("substituted group with id " + substituteGroupId);
+        console.log("substitution nodes:\n" + JSON.stringify(this.substitutionNodes));
+        console.log("substitution relationships:\n" + JSON.stringify(this.substitutionRelationships));
+    }
+
+    /**
+     * desubstitutes all nodes of a group by a new group node by
+     * a) removing a substitution node representing the group
+     * b) removing substitution relationships to or from the substitution node
+     * c) showing all nodes of the group (showGroup() call)
+     * d) showing all relationships that go to or from one of these nodes (showGroup() call)
+     *
+     * @param deSubstituteGroupId
+     */
+    deSubstituteGroupById(deSubstituteGroupId: string){
+
+        let group: TGroupModel;
+
+        // find this group by its ID
+        for(let groupIndex=0; groupIndex<this.groups.length; groupIndex++){
+            if(this.groups[groupIndex].id === deSubstituteGroupId){
+                group = this.groups[groupIndex];
+                break;
+            }
+        }
+        if(group == undefined){
+            this.alert.error("couldn't find group for de-substitution. Group ID: " + deSubstituteGroupId);
+            return;
+        }
+
+        // Remove group substitution node
+        for(let substitutionNodeId = 0; substitutionNodeId < this.substitutionNodes.length; substitutionNodeId++){
+            if(this.substitutionNodes[substitutionNodeId].id === deSubstituteGroupId){
+                // remove substitution node with the same ID as the group from the list of substitution nodes
+                this.substitutionNodes.splice(substitutionNodeId, 1);
+                break;
+            }
+        }
+
+        // remove all relationships to/from the group node
+        // iterate all substitution relationshipTemplates and check, if the group substitution node is set as target or source
+        // if it is, remove this relationship
+        for(let relTempIndex=0; relTempIndex<this.substitutionRelationships.length; relTempIndex++){
+            if((this.substitutionRelationships[relTempIndex].sourceElement.ref === deSubstituteGroupId)
+                    || (this.substitutionRelationships[relTempIndex].targetElement.ref === deSubstituteGroupId)){
+                this.substitutionRelationships.splice(relTempIndex, 1);
+                // make sure to check the same index the next time, since now this one got deleted
+                relTempIndex--;
+            }
+        }
+
+        // update global list of substitution nodes and their relationships
+        this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
+        // show group nodes and relationships
+        this.showGroup(group);
+        console.log("desubstituted group with id " + deSubstituteGroupId);
+        console.log("substitution nodes:\n" + JSON.stringify(this.substitutionNodes));
+        console.log("substitution relationships:\n" + JSON.stringify(this.substitutionRelationships));
     }
 
     /**
@@ -361,11 +523,14 @@ export class ViewbarComponent implements OnDestroy {
 
     updateGroups(groups: TGroupModel[]){
         this.groups = groups;
-        this.viewbarButtonsState.buttonsState.hideGroupButtonStates = {};
         // initialize button states for dropdown menus
+        this.viewbarButtonsState.buttonsState.hideGroupButtonStates = {};
+        this.viewbarButtonsState.buttonsState.substituteGroupButtonStates = {};
         for(let groupId = 0; groupId < groups.length; groupId++){
             this.viewbarButtonsState.buttonsState.hideGroupButtonStates[groups[groupId].id] = false;
+            this.viewbarButtonsState.buttonsState.substituteGroupButtonStates[groups[groupId].id] = false;
         }
+        // initialization done, update globally
         this.setButtonsState(this.viewbarButtonsState);
         console.log("groups set");
     }

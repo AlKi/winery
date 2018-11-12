@@ -14,6 +14,7 @@
 
 import { Injectable } from '@angular/core';
 import { Action } from 'redux';
+import {TNodeTemplate, TRelationshipTemplate} from "../../models/ttopology-template";
 
 export interface HighlightNodesAction extends Action {
     nodesToHighlight: string[];
@@ -26,6 +27,17 @@ export interface HideNodesAndRelationshipsAction extends Action {
 
 export interface ModifyGroupsVisibilityAction extends Action {
     buttonId: string;
+}
+
+export interface ModifyGroupsSubstitutionAction extends Action {
+    buttonId: string;
+}
+
+
+
+export interface SubstituteGroupsAction extends Action{
+    substitutionNodeIds: TNodeTemplate[];
+    substitutionRelationshipIds: TRelationshipTemplate[];
 }
 
 /**
@@ -60,6 +72,7 @@ export class TopologyRendererActions {
     static HIDE_NODES_AND_RELATIONSHIPS = 'HIDE_NODES_AND_RELATIONSHIPS';
     static GROUP_NODES = 'GROUP_NODES';
     static GROUPS_VISIBILITY_MODIFIED = "GROUPS_VISIBILITY_MODIFIED";
+    static GROUPS_SUBSTITUTION_MODIFIED = "GROUPS_SSUBSTITUTION_MODIFIED";
 
     togglePolicies(): Action {
         return { type: TopologyRendererActions.TOGGLE_POLICIES };
@@ -132,15 +145,6 @@ export class TopologyRendererActions {
         };
     }
 
-    hideNodesAndRelationships(listOfNodeIdsToHide: string[], listOfRelationshipIdsToHide: string[]): HideNodesAndRelationshipsAction  {
-        return {
-            type: TopologyRendererActions.HIDE_NODES_AND_RELATIONSHIPS,
-            nodesToHide: listOfNodeIdsToHide,
-            relationshipsToHide: listOfRelationshipIdsToHide
-        };
-
-    }
-
     toggleViewBar(): Action {
         return {type: TopologyRendererActions.TOGGLE_VIEW_BAR};
     }
@@ -164,9 +168,33 @@ export class TopologyRendererActions {
     toggleHideNoncomputing(): Action {
         return {type: TopologyRendererActions.TOGGLE_HIDE_NONCOMPUTING};
     }
-    modifyGroupsVisibility(groupId: string): ModifyGroupsVisibilityAction{
+    modifyGroupsVisibilityButtonState(groupId: string): ModifyGroupsVisibilityAction{
         return {type: TopologyRendererActions.GROUPS_VISIBILITY_MODIFIED,
                 buttonId: groupId
         };
+    }
+
+    hideNodesAndRelationships(listOfNodeIdsToHide: string[], listOfRelationshipIdsToHide: string[]): HideNodesAndRelationshipsAction  {
+        return {
+            type: TopologyRendererActions.HIDE_NODES_AND_RELATIONSHIPS,
+            nodesToHide: listOfNodeIdsToHide,
+            relationshipsToHide: listOfRelationshipIdsToHide
+        };
+
+    }
+
+    modifyGroupsSubstitutionButtonState(groupId: string): ModifyGroupsSubstitutionAction{
+        return {type: TopologyRendererActions.GROUPS_SUBSTITUTION_MODIFIED,
+                buttonId: groupId
+        };
+    }
+
+    substituteGroups(substitutionNodeIds: TNodeTemplate[], substitutionRelationshipIds: TRelationshipTemplate[]): SubstituteGroupsAction  {
+        return {
+            type: TopologyRendererActions.HIDE_NODES_AND_RELATIONSHIPS,
+            substitutionNodeIds: substitutionNodeIds,
+            substitutionRelationshipIds: substitutionRelationshipIds
+        };
+
     }
 }

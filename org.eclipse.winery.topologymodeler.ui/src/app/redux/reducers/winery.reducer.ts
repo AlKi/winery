@@ -35,9 +35,12 @@ export interface WineryState {
     nodeVisuals: Visuals[];
     // I know it shouldn't be here, but this modal is not defined on either the navbar or a node template, but on a sidebar...
     createGroupModalData: GroupsModalData;
-    // same here...
+    // currently selected nodes for setting nodes for Groups, etc.
     selectedNodesIds: string[];
     groups: {groups: TGroupModel[]};
+    substitutedNodes: TNodeTemplate[];
+    substitutedRelationships: TRelationshipTemplate[];
+
 }
 
 export const INITIAL_WINERY_STATE: WineryState = {
@@ -67,7 +70,10 @@ export const INITIAL_WINERY_STATE: WineryState = {
     },
     createGroupModalData: new GroupsModalData(),
     selectedNodesIds: [],
-    groups: {groups: []}
+    groups: {groups: []},
+    substitutedNodes: [],
+    substitutedRelationships: [],
+
 };
 
 /**

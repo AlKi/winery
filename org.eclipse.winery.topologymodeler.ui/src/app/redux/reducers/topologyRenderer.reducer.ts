@@ -13,7 +13,13 @@
  ********************************************************************************/
 
 import { Action } from 'redux';
-import { HighlightNodesAction, HideNodesAndRelationshipsAction, TopologyRendererActions, ModifyGroupsVisibilityAction } from '../actions/topologyRenderer.actions';
+import {
+    HighlightNodesAction,
+    HideNodesAndRelationshipsAction,
+    TopologyRendererActions,
+    ModifyGroupsVisibilityAction,
+    ModifyGroupsSubstitutionAction
+} from '../actions/topologyRenderer.actions';
 
 export interface TopologyRendererState {
     buttonsState: {
@@ -41,6 +47,8 @@ export interface TopologyRendererState {
         substituteSelectionButton?: boolean;
         // has .[groupid] properties, which are boolean
         hideGroupButtonStates?: any;
+        // has .[groupid] properties, which are boolean
+        substituteGroupButtonStates?: any;
     };
     nodesToSelect?: string[];
     nodesToHide: string[];
@@ -265,6 +273,13 @@ export const TopologyRendererReducer =
                 const myAction = <ModifyGroupsVisibilityAction> action;
                 const state = lastState;
                 state.buttonsState.hideGroupButtonStates[myAction.buttonId] = !state.buttonsState.hideGroupButtonStates[myAction.buttonId];
+
+                return state;
+            }
+            case TopologyRendererActions.GROUPS_SUBSTITUTION_MODIFIED: {
+                const myAction = <ModifyGroupsSubstitutionAction> action;
+                const state = lastState;
+                state.buttonsState.substituteGroupButtonStates[myAction.buttonId] = !state.buttonsState.substituteGroupButtonStates[myAction.buttonId];
 
                 return state;
             }

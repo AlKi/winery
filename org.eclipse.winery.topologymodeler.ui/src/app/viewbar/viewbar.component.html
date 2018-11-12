@@ -61,6 +61,23 @@
         </button>
 
         <div class="btn-group" style="margin-left: 4px" dropdown>
+            <button dropdownToggle type="button" class="btn btn-sm dark-button-style align-middle dropdown-toggle">
+                Substitute Groups <span class="caret"></span>
+            </button>
+            <ul *dropdownMenu class="dropdown-menu" role="menu">
+                <li *ngFor="let group of groups" role="menuitem">
+                    <button [style.background-color]="getStyle(viewbarButtonsState.buttonsState.substituteGroupButtonStates[group.id])"
+                            tooltip="Hide all nodes of group '{{group.name}}'. Group ID: {{group.id}}"
+                            placement="left" class="dropdown-item"
+                            (click)="toggleButton($event)"
+                            id="substituteGroup{{group.id}}">
+                        {{group.name}} <br/> ID: {{group.id}}
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="btn-group" style="margin-left: 4px" dropdown>
             <button
                 class="btn btn-sm align-middle dark-button-style"
                 type="button"
