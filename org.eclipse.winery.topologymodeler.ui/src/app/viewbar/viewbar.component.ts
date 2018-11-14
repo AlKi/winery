@@ -304,6 +304,10 @@ export class ViewbarComponent implements OnDestroy {
             return;
         }
 
+        // used for determining the position of the substitution node
+        let nodeXValue = 0;
+        let nodeYValue = 0;
+        let hiddenNodesCount = 0;
 
         // find all relationships emerging from or going to nodes of this group to create substitutions from/to the
         // substitution node
@@ -311,6 +315,9 @@ export class ViewbarComponent implements OnDestroy {
         for( let nodeIndex=0; nodeIndex<this.unformattedTopologyTemplate.nodeTemplates.length; nodeIndex++ ){
             for(let groupNodeIndex = 0; groupNodeIndex<group.nodeTemplateIds.length; groupNodeIndex++){
                 if(group.nodeTemplateIds[groupNodeIndex] === this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id) {
+                    nodeXValue = nodeXValue + this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].x;
+                    nodeYValue = nodeYValue + this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].y;
+                    hiddenNodesCount++;
                     // add this node to the list of nodes to be set invisible, if it is not already on the list
                     let nodeNotHidden: boolean = true;
                     for (let nodeId in this.nodeIdsToHide) {
@@ -330,43 +337,82 @@ export class ViewbarComponent implements OnDestroy {
         this.checkRelationshipsToHide();
 
         // create substitution node with this group's id and name
-        // TODO: check Visuals!
-        let groupSubstitutionNode: TNodeTemplate = new TNodeTemplate({}, group.id, "substitution", group.name, 1, 1, new Visuals("#303030", '',"","groupSubstitution",""));
+        /*public properties: any,
+                public id: string,
+                public type: string,
+                public name: string,
+                public minInstances: number,
+                public maxInstances: number,
+                public visuals: Visuals,
+                documentation?: any,
+                any?: any,
+                otherAttributes?: any,
+                public x?: number,
+                public y?: number,
+                public capabilities?: any,
+                public requirements?: any,
+                public deploymentArtifacts?: any,
+                public policies?: any,
+                private _state?: DifferenceStates*/
+        let groupSubstitutionNode: TNodeTemplate = new TNodeTemplate({}, group.id,
+                                                                        group.type, group.name,
+                                                                        1,
+                                                                        1,
+                                                                        new Visuals("#303030", '',"","groupSubstitution",""),
+                                                                        {}, {}, {},
+                                                                    Math.floor(nodeXValue / hiddenNodesCount), Math.floor(nodeYValue / hiddenNodesCount));
         this.substitutionNodes.push(groupSubstitutionNode);
-
-        let substitutionRelationships: TRelationshipTemplate[] = [];
         // iterate all relationshipTemplates and check, if target or source is part of the substituted group. If so,
         // add a substitution relationship to or from the substituted group.
         // but don't do, if it is a group internal relationship
+        // TODO: check, if it is an inter-group-relatonship! Then show a substitution relationship!
         for(let relTempIndex=0; relTempIndex<this.unformattedTopologyTemplate.relationshipTemplates.length; relTempIndex++){
-            checkThisRelationship:
+            nodesSearch:
             for(let hiddenNodeTypeIndex=0; hiddenNodeTypeIndex<this.nodeIdsToHide.length; hiddenNodeTypeIndex++){
                 if(this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].sourceElement.ref === this.nodeIdsToHide[hiddenNodeTypeIndex]){
-                    if(!(this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].targetElement.ref === this.nodeIdsToHide[hiddenNodeTypeIndex])){
-                        // if only the source is part of the group, add a substituted relationship to the list
+                    let targetNotHidden = true;
+                    for(let i = 0; i < this.nodeIdsToHide.length; i++){
+                        if (this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].targetElement.ref === this.nodeIdsToHide[i]) {
+                            targetNotHidden = false;
+                            break;
+                        }
+                    }
+                    // if the target is hidden as well, don't substitute this relationship
+                    if(targetNotHidden) {
                         let relTemplate = this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex];
                         this.substitutionRelationships.push(new TRelationshipTemplate({ref: groupSubstitutionNode.id},
-                                                                                                        relTemplate.targetElement,
-                                                                                                        relTemplate.name,
-                                                                                                        relTemplate.id,
-                                                                                                        relTemplate.type));
+                            relTemplate.targetElement,
+                            relTemplate.name,
+                            "substitution_" + relTemplate.id,
+                            relTemplate.type));
                     }
+                    break nodesSearch;
                 }else if(this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].targetElement.ref === this.nodeIdsToHide[hiddenNodeTypeIndex]){
-                        // if only the target is part of the group, add a substituted relationship to the list
+
+                    let sourceNotHidden = true;
+                    for(let i = 0; i < this.nodeIdsToHide.length; i++){
+                        if (this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].sourceElement.ref === this.nodeIdsToHide[i]) {
+                            sourceNotHidden = false;
+                            break;
+                        }
+                    }
+                    // if the target is hidden as well, don't substitute this relationship
+                    if(sourceNotHidden) {
                         let relTemplate = this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex];
                         this.substitutionRelationships.push(new TRelationshipTemplate(relTemplate.sourceElement,
-                                                                                                        {ref: groupSubstitutionNode.id},
-                                                                                                        relTemplate.name,
-                                                                                                        relTemplate.id,
-                                                                                                        relTemplate.type));
+                            {ref: groupSubstitutionNode.id},
+                            relTemplate.name,
+                            "substitution_" + relTemplate.id,
+                            relTemplate.type));
+                    }
+                    break nodesSearch;
                 }
-                break checkThisRelationship;
             }
         }
         // hide groups nodes and their relationships
         this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
-        // show substitution node and relationships
-        this.ngRedux.dispatch((this.actions.substituteGroups(this.substitutionNodes, this.substitutionRelationships)));
+        // show substitution nodes and relationships
+        this.ngRedux.dispatch(this.actions.setGroupsSubstitutions(this.substitutionNodes, this.substitutionRelationships));
         console.log("substituted group with id " + substituteGroupId);
         console.log("substitution nodes:\n" + JSON.stringify(this.substitutionNodes));
         console.log("substitution relationships:\n" + JSON.stringify(this.substitutionRelationships));
@@ -402,6 +448,7 @@ export class ViewbarComponent implements OnDestroy {
             if(this.substitutionNodes[substitutionNodeId].id === deSubstituteGroupId){
                 // remove substitution node with the same ID as the group from the list of substitution nodes
                 this.substitutionNodes.splice(substitutionNodeId, 1);
+                // done, there was only one substitution node
                 break;
             }
         }
@@ -417,14 +464,17 @@ export class ViewbarComponent implements OnDestroy {
                 relTempIndex--;
             }
         }
-
+        // update global lists of substitution node templates and substitution relationship templates
+        this.ngRedux.dispatch(this.actions.setGroupsSubstitutions(this.substitutionNodes, this.substitutionRelationships));
         // update global list of substitution nodes and their relationships
         this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
+
         // show group nodes and relationships
         this.showGroup(group);
-        console.log("desubstituted group with id " + deSubstituteGroupId);
+
         console.log("substitution nodes:\n" + JSON.stringify(this.substitutionNodes));
         console.log("substitution relationships:\n" + JSON.stringify(this.substitutionRelationships));
+        //console.log("substitution relationships:\n" + JSON.stringify(this.substitutionRelationships));
     }
 
     /**
@@ -449,7 +499,6 @@ export class ViewbarComponent implements OnDestroy {
             }
         }
         this.alert.info("Hiding " + nodeIdsToHide.length + " Nodes");
-        //console.log("unformattedTopologyTemplate: " +JSON.stringify(this.unformattedTopologyTemplate));
         this.checkRelationshipsToHide();
         console.log("hiding nodes: " + JSON.stringify(nodeIdsToHide));
         console.log("hiding relationships: " + JSON.stringify(this.relationshipIdsToHide));

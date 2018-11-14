@@ -29,6 +29,7 @@ import { isNullOrUndefined } from 'util';
 import { GroupedNodeTypeModel } from '../models/groupedNodeTypeModel';
 import { EntityTypesModel } from '../models/entityTypesModel';
 import { TopologyRendererState } from '../redux/reducers/topologyRenderer.reducer';
+import {Subscription} from "rxjs";
 
 /**
  * Every node has its own component and gets created dynamically.
@@ -98,7 +99,7 @@ export class NodeComponent implements OnInit, AfterViewInit, OnDestroy, DoCheck 
     popoverHtml = `<div class="">Open NodeType in a separate tab</div>`;
     // differ object for detecting changes made to the nodeTemplate object for DoCheck
     differ: any;
-    unsubscribe$: any; // function handle for unsubscribing from state changes
+    subscription: Subscription; // handle for unsubscribing from state changes via subscription.unsubscribe()
 
     constructor(private zone: NgZone,
                 private $ngRedux: NgRedux<IWineryState>,
@@ -174,7 +175,7 @@ export class NodeComponent implements OnInit, AfterViewInit, OnDestroy, DoCheck 
     ngOnInit() {
         this.differ = this.differs.find([]).create();
         this.nodeClass = this.nodeTemplate.visuals.pattern ? 'pattern' : 'nodeTemplate';
-        this.unsubscribe$ = this.$ngRedux.select(state => state.topologyRendererState)
+        this.subscription = this.$ngRedux.select(state => state.topologyRendererState)
             .subscribe(currentButtonsState => this.checkHideState(currentButtonsState));
     }
 
@@ -394,7 +395,7 @@ export class NodeComponent implements OnInit, AfterViewInit, OnDestroy, DoCheck 
      * Angular lifecycle event.
      */
     ngOnDestroy(): void {
-        this.unsubscribe$();
+        this.subscription.unsubscribe();
         this.askForRemoval.emit(this.nodeTemplate.id);
         if (this.nodeRef) {
             this.nodeRef.destroy();

@@ -14,11 +14,37 @@
 
 import { Action } from 'redux';
 import {
-    DecMaxInstances, DecMinInstances, DeleteDeploymentArtifactAction, DeleteNodeAction, DeletePolicyAction, DeleteRelationshipAction,
-    HideNavBarAndPaletteAction, IncMaxInstances, IncMinInstances, SaveNodeTemplateAction, SaveRelationshipAction, SendCurrentNodeIdAction,
-    SendPaletteOpenedAction, SetCababilityAction, SetDeploymentArtifactAction, SetNodeVisuals, SetPolicyAction, SetPropertyAction, SetRequirementAction,
-    SetSelectedNodeIds, SetTargetLocation, SidebarMaxInstanceChanges, SidebarMinInstanceChanges, SidebarNodeNamechange, SidebarStateAction, UpdateNodeCoordinatesAction,
-    UpdateRelationshipNameAction, WineryActions, GroupSidebarStateAction, CreateGroupAction, ModifyGroupsAction
+    DecMaxInstances,
+    DecMinInstances,
+    DeleteDeploymentArtifactAction,
+    DeleteNodeAction,
+    DeletePolicyAction,
+    DeleteRelationshipAction,
+    HideNavBarAndPaletteAction,
+    IncMaxInstances,
+    IncMinInstances,
+    SaveNodeTemplateAction,
+    SaveRelationshipAction,
+    SendCurrentNodeIdAction,
+    SendPaletteOpenedAction,
+    SetCababilityAction,
+    SetDeploymentArtifactAction,
+    SetNodeVisuals,
+    SetPolicyAction,
+    SetPropertyAction,
+    SetRequirementAction,
+    SetSelectedNodeIds,
+    SetTargetLocation,
+    SidebarMaxInstanceChanges,
+    SidebarMinInstanceChanges,
+    SidebarNodeNamechange,
+    SidebarStateAction,
+    UpdateNodeCoordinatesAction,
+    UpdateRelationshipNameAction,
+    WineryActions,
+    GroupSidebarStateAction,
+    CreateGroupAction,
+    ModifyGroupsAction
 } from '../actions/winery.actions';
 import { TNodeTemplate, TRelationshipTemplate, TTopologyTemplate, Visuals } from '../../models/ttopology-template';
 import { TDeploymentArtifact } from '../../models/artifactsModalData';
@@ -38,8 +64,6 @@ export interface WineryState {
     // currently selected nodes for setting nodes for Groups, etc.
     selectedNodesIds: string[];
     groups: {groups: TGroupModel[]};
-    substitutedNodes: TNodeTemplate[];
-    substitutedRelationships: TRelationshipTemplate[];
 
 }
 
@@ -70,9 +94,7 @@ export const INITIAL_WINERY_STATE: WineryState = {
     },
     createGroupModalData: new GroupsModalData(),
     selectedNodesIds: [],
-    groups: {groups: []},
-    substitutedNodes: [],
-    substitutedRelationships: [],
+    groups: {groups: []}
 
 };
 
@@ -123,8 +145,8 @@ export const WineryReducer =
                 return <WineryState>{
                     ...lastState,
                     groups: groups,
-                    };
-                }
+                };
+            }
             case WineryActions.CHANGE_MIN_INSTANCES:
                 const sideBarNodeId: any = (<SidebarMinInstanceChanges>action).minInstances.id;
                 const minInstances: any = (<SidebarMinInstanceChanges>action).minInstances.count;

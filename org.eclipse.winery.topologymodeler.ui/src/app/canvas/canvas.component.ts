@@ -132,6 +132,13 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
     // determines if a warning in the modal of having duplicate Id's is shown
     duplicateId = false;
 
+    // nodes and relationships created by substitution and therefore not part of the TopologyTemplate
+    // are updated via subscription to winerystate.substitution...
+    substitutionNodeTemplates: TNodeTemplate[] = [];
+    substitutionRelationshipTemplates: TRelationshipTemplate[] = [];
+    hiddenNodeIds: string[] = [];
+    hiddenRelationshipIds: string[] = [];
+
     private longPressing: boolean;
 
     constructor(private jsPlumbService: JsPlumbService,
@@ -165,6 +172,14 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
         this.gridTemplate = new GridTemplate(100, false, false, 30);
         this.subscriptions.push(this.ngRedux.select(state => state.wineryState.currentPaletteOpenedState)
             .subscribe(currentPaletteOpened => this.setPaletteState(currentPaletteOpened)));
+        this.subscriptions.push(this.ngRedux.select(state => state.topologyRendererState.substitutionNodes)
+            .subscribe(substitutionNodes => this.updateSubstitutionNodes(substitutionNodes)));
+        this.subscriptions.push(this.ngRedux.select(state => state.topologyRendererState.substitutionRelationships)
+            .subscribe(substitutionRelationships => this.updateSubstitutionRelationships(substitutionRelationships)));
+        this.subscriptions.push(this.ngRedux.select(state => state.topologyRendererState.nodesToHide)
+            .subscribe(nodesToHide => this.updateHiddenNodeIds(nodesToHide)));
+        this.subscriptions.push(this.ngRedux.select(state => state.topologyRendererState.relationshipsToHide)
+            .subscribe(relationshipsToHide => this.updateHiddenRelationshipIds(relationshipsToHide)));
         this.hotkeysService.add(new Hotkey('mod+a', (event: KeyboardEvent): boolean => {
             event.stopPropagation();
             this.allNodeTemplates.forEach(node => this.enhanceDragSelection(node.id));
@@ -236,6 +251,126 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
         }
         this.allNodesIds = this.allNodeTemplates.map(node => node.id);
     }
+
+    /**
+     *
+     * @param substitutionRelationships
+     */
+    updateSubstitutionRelationships(substitutionRelationships: TRelationshipTemplate[]){
+        // delete removed substitution relationships first!
+        let removedSubstitutionRelationships: TRelationshipTemplate[] = [];
+        this.substitutionRelationshipTemplates.forEach(oldRel => {
+            let stillExisting = false;
+            for(let newIndex = 0; newIndex < substitutionRelationships.length; newIndex++){
+                console.log("oldRel.id="+oldRel.id + " newRel id=" + substitutionRelationships[newIndex].id);
+                if(oldRel.id === substitutionRelationships[newIndex].id){
+                    stillExisting = true;
+                    break;
+                }
+            }
+            if(!stillExisting){
+                this.unPaintRelationship(oldRel);
+                removedSubstitutionRelationships.push(oldRel);
+                // add this relationship to the list of relationships to be deleted
+                /*for(let relTempIndex = 0; relTempIndex < this.allRelationshipTemplates.length; relTempIndex++){
+                    if(this.allRelationshipTemplates[relTempIndex].id === oldRel.id){
+                        console.log("removed substitution relationship found: " + this.allRelationshipTemplates[relTempIndex].id);
+                        removedSubstitutionRelationships.push(this.allRelationshipTemplates[relTempIndex]);
+                    }
+                }*/
+            }
+        });
+
+        // save new list of substitution relationships
+        this.substitutionRelationshipTemplates = substitutionRelationships;
+        console.log("removed substitution relationships: ");
+        console.log(removedSubstitutionRelationships);
+        // then delete removed substitution relationships
+        /*if(removedSubstitutionRelationships.length > 0){
+            // remove the connection for this relationship from the canvas
+            removedSubstitutionRelationships.forEach(removedRel => this.unPaintRelationship(removedRel));
+
+            removedSubstitutionRelationships.forEach(removedRel => {
+                this.newJsPlumbInstance.getAllConnections().some(con => {
+                   if(con.id === removedRel.id){
+                       console.log("deleting substitution connection " + con.id);
+                       this.newJsPlumbInstance.deleteConnection(con);
+                       // return true to abort
+                       return true;
+                   }
+                   console.log("not deleting substitution connection " + con.id);
+                   // return false to continue
+                   return false;
+                });
+            });
+        }*/
+        this.substitutionRelationshipTemplates = substitutionRelationships;
+        this.updateRelationshipsForViewChange(this.allRelationshipTemplates);
+        console.log("updated Substitution Relationship Templates in canvas");
+    }
+
+    /**
+     *
+     * @param substitutionNodes
+     */
+    updateSubstitutionNodes(substitutionNodes){
+        this.substitutionNodeTemplates = substitutionNodes;
+        this.updateRelationshipsForViewChange(this.allRelationshipTemplates);
+        console.log("updated Substitution Node Templates in canvas");
+    }
+
+    /**
+     *
+     * @param newHiddenRelationshipIds
+     */
+    updateHiddenRelationshipIds(newHiddenRelationshipIds: string[]){
+
+        let unhiddenRelationships: TRelationshipTemplate[] = [];
+        this.hiddenRelationshipIds.forEach(oldRelId => {
+            let stillHidden = false;
+            for(let newIndex = 0; newIndex < newHiddenRelationshipIds.length; newIndex++){
+                if(oldRelId === newHiddenRelationshipIds[newIndex]){
+                    stillHidden = true;
+                    break;
+                }
+            }
+            if(!stillHidden){
+                //console.log("relationship not hidden anymore: " + oldRelId);
+                // (re)draw relationship
+                for(let relTempIndex = 0; relTempIndex < this.allRelationshipTemplates.length; relTempIndex++){
+                    if(this.allRelationshipTemplates[relTempIndex].id === oldRelId){
+                        //console.log("redrawing relationship");
+                        unhiddenRelationships.push(this.allRelationshipTemplates[relTempIndex]);
+                    }
+                }
+            }
+        });
+
+        // save new list of hidden relationships
+        this.hiddenRelationshipIds = newHiddenRelationshipIds;
+        // then paint unhidden relationships
+        if(unhiddenRelationships.length > 0){
+            // TODO: does not work properly, relationships are not removeable afterwards
+            //unhiddenRelationships.forEach(unhiddenRelationship => this.manageRelationshipsf(unhiddenRelationship));
+            this.updateRelationshipsForViewChange(unhiddenRelationships);
+        }
+        // then make sure to update everything
+        this.updateRelationshipsForViewChange(this.allRelationshipTemplates);
+        console.log("updated hidden Relationship IDs in canvas");
+    }
+
+    /**
+     *
+     * @param hiddenNodeIds
+     */
+    updateHiddenNodeIds(hiddenNodeIds: string[]){
+        this.hiddenNodeIds = hiddenNodeIds;
+        for(let hiddenIndex = 0; hiddenIndex < hiddenNodeIds.length; hiddenIndex++){
+            this.newJsPlumbInstance.deleteConnectionsForElement(hiddenNodeIds[hiddenIndex]);
+        }
+        this.updateRelationshipsForViewChange(this.allRelationshipTemplates);
+    }
+
 
     /**
      * Executed when a node is short clicked triggering the sidebar, focusing on the name input field and
@@ -471,6 +606,8 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
                     kvproperties:
                     this.capabilities.properties
                 };
+                // return true so .some() stops iterating
+                return true;
             }
         });
     }
@@ -485,6 +622,8 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
                     kvproperties:
                     this.requirements.properties
                 };
+                // return true so .some() stops iterating
+                return true;
             }
         });
     }
@@ -498,6 +637,8 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
                 cap.properties = {
                     any: this.capabilities.properties
                 };
+                // return true so .some() stops iterating
+                return true;
             }
         });
     }
@@ -511,6 +652,8 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
                 req.properties = {
                     any: this.requirements.properties
                 };
+                // return true so .some() stops iterating
+                return true;
             }
         });
     }
@@ -907,14 +1050,37 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
             const difference = storeRelationshipsLength - localRelationshipsCopyLength;
             if (difference === 1) {
                 this.handleNewRelationship(currentRelationships);
-            } else if (difference > 0 || difference < 0) {
+            } else if(difference != 0){//} if (difference > 0 || difference < 0) {
                 this.allRelationshipTemplates = currentRelationships;
                 this.allRelationshipTemplates.forEach(relTemplate => this.manageRelationships(relTemplate));
             }
         } else if (storeRelationshipsLength !== 0 && localRelationshipsCopyLength !== 0) {
+            // updates visible relationships as well
             this.updateRelName(currentRelationships);
         }
+        // do the same for substitution relationships
+        this.substitutionRelationshipTemplates.forEach(relTemplate => this.manageRelationships(relTemplate));
     }
+
+
+    /**
+     * Gets called if relationships got added or removed by view operations
+     * @param currentRelationships  List of all displayed relationships.
+     */
+    updateRelationshipsForViewChange(currentRelationships: Array<TRelationshipTemplate>): void {
+        // workaround for a jsPlumb connection bug, where upon loading node templates without relationships no
+        // creation of relationships possible; delete the dummy relationship upon creating a new one
+        if (this.newJsPlumbInstance.getAllConnections().length === 2 && this.allRelationshipTemplates.length === 0) {
+            this.newJsPlumbInstance.deleteConnection(this.newJsPlumbInstance.getAllConnections()[0]);
+        }
+        this.allRelationshipTemplates.forEach(relTemplate => this.manageRelationships(relTemplate));
+
+        // do the same for substitution relationships
+        this.substitutionRelationshipTemplates.forEach(relTemplate => this.manageRelationships(relTemplate));
+    }
+
+
+
 
     /**
      * Handler for new relations, adds it to the internal representation
@@ -1071,6 +1237,11 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
      * @param nodeTemplate  Node Element (DOM).
      */
     setNewCoordinates(nodeTemplate: any): void {
+        const nodeCoordinates = {
+            id: nodeTemplate.firstChild.id,
+            x: nodeTemplate.firstChild.offsetLeft,
+            y: nodeTemplate.firstChild.offsetTop
+        };
         let nodeIndex;
         this.allNodeTemplates.some((node, index) => {
             if (node.id === nodeTemplate.firstChild.id) {
@@ -1078,14 +1249,13 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
                 return true;
             }
         });
-        const nodeCoordinates = {
-            id: nodeTemplate.firstChild.id,
-            x: nodeTemplate.firstChild.offsetLeft,
-            y: nodeTemplate.firstChild.offsetTop
-        };
-        this.allNodeTemplates[nodeIndex].x = nodeCoordinates.x;
-        this.allNodeTemplates[nodeIndex].y = nodeCoordinates.y;
-        this.ngRedux.dispatch(this.actions.updateNodeCoordinates(nodeCoordinates));
+        if(nodeIndex != undefined) {
+            this.allNodeTemplates[nodeIndex].x = nodeCoordinates.x;
+            this.allNodeTemplates[nodeIndex].y = nodeCoordinates.y;
+            this.ngRedux.dispatch(this.actions.updateNodeCoordinates(nodeCoordinates));
+        }/*else{
+            // TODO: if not found, it is probably a substitution node, we don't care right now
+        }*/
     }
 
     /**
@@ -1109,6 +1279,20 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
      * @param newRelationship
      */
     paintRelationship(newRelationship: TRelationshipTemplate) {
+        for(let hiddenIndex = 0; hiddenIndex<this.hiddenRelationshipIds.length; hiddenIndex++){
+            if(newRelationship.id === this.hiddenRelationshipIds[hiddenIndex]){
+                // not painting relationship,
+                // check if we need to remove it anyway
+                //console.log("not painting hidden relationship with id " + newRelationship.id);
+                this.newJsPlumbInstance.getAllConnections().some(con => {
+                    if(con.id === this.hiddenRelationshipIds[hiddenIndex]){
+                        this.newJsPlumbInstance.deleteConnection(con);
+                    }
+                });
+                return;
+            }
+        }
+
         const allJsPlumbRelationships = this.newJsPlumbInstance.getAllConnections();
         if (!allJsPlumbRelationships.some(rel => rel.id === newRelationship.id)) {
             let labelString = (isNullOrUndefined(newRelationship.state) ? '' : newRelationship.state + '<br>')
@@ -1155,6 +1339,15 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
                 }, 1);
             }
         }
+    }
+
+    unPaintRelationship(oldRelationship: TRelationshipTemplate){
+        const allJsPlumbRelationships = this.newJsPlumbInstance.getAllConnections();
+        allJsPlumbRelationships.some(rel => {
+            if(rel.id === oldRelationship.id){
+                this.newJsPlumbInstance.deleteConnection(rel);
+            }
+        });
     }
 
     /**
@@ -1766,11 +1959,13 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
                 this.allNodeTemplates.some((nodeTemplate, index) => {
                     if (nodeTemplate.id === node.id) {
                         indexOfNode = index;
+                        this.allNodeTemplates.splice(indexOfNode, 1);
                         return true;
                     }
                 });
-                // TODO: is this right? shouldn't this line be after line 1674 before returning????
-                this.allNodeTemplates.splice(indexOfNode, 1);
+                // TODO: is this right? shouldn't this line be two lines above before returning????
+                // this should throw an error due to undefined variable
+                //this.allNodeTemplates.splice(indexOfNode, 1);
             }
         });
     }

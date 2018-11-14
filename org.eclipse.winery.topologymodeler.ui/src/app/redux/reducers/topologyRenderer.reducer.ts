@@ -18,8 +18,9 @@ import {
     HideNodesAndRelationshipsAction,
     TopologyRendererActions,
     ModifyGroupsVisibilityAction,
-    ModifyGroupsSubstitutionAction
+    ModifyGroupsSubstitutionButtonsAction, SetGroupsSubstitutionsAction
 } from '../actions/topologyRenderer.actions';
+import {TNodeTemplate, TRelationshipTemplate} from "../../models/ttopology-template";
 
 export interface TopologyRendererState {
     buttonsState: {
@@ -53,6 +54,8 @@ export interface TopologyRendererState {
     nodesToSelect?: string[];
     nodesToHide: string[];
     relationshipsToHide: string[];
+    substitutionNodes: TNodeTemplate[];
+    substitutionRelationships: TRelationshipTemplate[];
 }
 
 export const INITIAL_TOPOLOGY_RENDERER_STATE: TopologyRendererState = {
@@ -81,8 +84,10 @@ export const INITIAL_TOPOLOGY_RENDERER_STATE: TopologyRendererState = {
         substituteSelectionButton: false,
         hideGroupButtonStates: {}
     },
-    nodesToHide: [""],
-    relationshipsToHide: [""]
+    nodesToHide: [],
+    relationshipsToHide: [],
+    substitutionNodes: [],
+    substitutionRelationships: []
 };
 /**
  * Reducer for the TopologyRenderer
@@ -276,11 +281,18 @@ export const TopologyRendererReducer =
 
                 return state;
             }
-            case TopologyRendererActions.GROUPS_SUBSTITUTION_MODIFIED: {
-                const myAction = <ModifyGroupsSubstitutionAction> action;
+            case TopologyRendererActions.GROUPS_SUBSTITUTION_BUTTONS_MODIFIED: {
+                const myAction = <ModifyGroupsSubstitutionButtonsAction> action;
                 const state = lastState;
                 state.buttonsState.substituteGroupButtonStates[myAction.buttonId] = !state.buttonsState.substituteGroupButtonStates[myAction.buttonId];
 
+                return state;
+            }
+            case TopologyRendererActions.GROUPS_SUBSTITUTIONS_MODIFIED: {
+                const myAction = <SetGroupsSubstitutionsAction>action;
+                const state = lastState;
+                state.substitutionNodes = myAction.substitutionNodes,
+                state.substitutionRelationships = myAction.substitutionRelationships
                 return state;
             }
         }

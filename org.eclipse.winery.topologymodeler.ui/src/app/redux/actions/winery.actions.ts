@@ -18,6 +18,7 @@ import { TNodeTemplate, TRelationshipTemplate, Visuals } from '../../models/ttop
 import { TDeploymentArtifact } from '../../models/artifactsModalData';
 import { TPolicy } from '../../models/policiesModalData';
 import {TGroupModel} from "../../models/groupModel";
+import {ModifyGroupsSubstitutionButtonsAction} from "./topologyRenderer.actions";
 
 export interface SendPaletteOpenedAction extends Action {
     paletteOpened: boolean;
@@ -148,6 +149,7 @@ export interface ModifyGroupsAction extends Action {
     groups: {groups:TGroupModel[]};
 }
 
+
 export interface SetCababilityAction extends Action {
     nodeCapability: {
         nodeId: string,
@@ -256,6 +258,7 @@ export class WineryActions {
     static CREATE_GROUP = 'CREATE_GROUP';
     static MODIFY_GROUPS= 'MODIFY_GROUPS';
     static SET_SELECTED_NODE_IDS = 'SET_SELECTED_NODE_IDS';
+    static SET_GROUP_SUBSTITUTIONS = 'SET_GROUP_SUBSTITUTIONS';
 
     sendPaletteOpened: ActionCreator<SendPaletteOpenedAction> =
         ((paletteOpened) => ({
@@ -358,11 +361,6 @@ export class WineryActions {
             type: WineryActions.MODIFY_GROUPS,
             groups: newGroups,
         }));
-    /*openCreateGroupModal: ActionCreator<CreateGroupAction> =
-        ((newGroupData) => ({
-            type: WineryActions.CREATE_GROUP,
-            newGroup: newGroupData
-        }));*/
     setCapability: ActionCreator<SetCababilityAction> =
         ((newCapability) => ({
             type: WineryActions.SET_CAPABILITY,

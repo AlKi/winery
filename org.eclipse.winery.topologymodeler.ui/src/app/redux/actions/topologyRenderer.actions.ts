@@ -29,15 +29,13 @@ export interface ModifyGroupsVisibilityAction extends Action {
     buttonId: string;
 }
 
-export interface ModifyGroupsSubstitutionAction extends Action {
+export interface ModifyGroupsSubstitutionButtonsAction extends Action {
     buttonId: string;
 }
 
-
-
-export interface SubstituteGroupsAction extends Action{
-    substitutionNodeIds: TNodeTemplate[];
-    substitutionRelationshipIds: TRelationshipTemplate[];
+export interface SetGroupsSubstitutionsAction extends Action{
+    substitutionNodes: TNodeTemplate[];
+    substitutionRelationships: TRelationshipTemplate[];
 }
 
 /**
@@ -72,7 +70,8 @@ export class TopologyRendererActions {
     static HIDE_NODES_AND_RELATIONSHIPS = 'HIDE_NODES_AND_RELATIONSHIPS';
     static GROUP_NODES = 'GROUP_NODES';
     static GROUPS_VISIBILITY_MODIFIED = "GROUPS_VISIBILITY_MODIFIED";
-    static GROUPS_SUBSTITUTION_MODIFIED = "GROUPS_SSUBSTITUTION_MODIFIED";
+    static GROUPS_SUBSTITUTION_BUTTONS_MODIFIED = "GROUPS_SUBSTITUTION_BUTTONS_MODIFIED";
+    static GROUPS_SUBSTITUTIONS_MODIFIED = "GROUPS_SUBSTITUTIONS_MODIFIED";
 
     togglePolicies(): Action {
         return { type: TopologyRendererActions.TOGGLE_POLICIES };
@@ -183,17 +182,17 @@ export class TopologyRendererActions {
 
     }
 
-    modifyGroupsSubstitutionButtonState(groupId: string): ModifyGroupsSubstitutionAction{
-        return {type: TopologyRendererActions.GROUPS_SUBSTITUTION_MODIFIED,
+    modifyGroupsSubstitutionButtonState(groupId: string): ModifyGroupsSubstitutionButtonsAction{
+        return {type: TopologyRendererActions.GROUPS_SUBSTITUTION_BUTTONS_MODIFIED,
                 buttonId: groupId
         };
     }
 
-    substituteGroups(substitutionNodeIds: TNodeTemplate[], substitutionRelationshipIds: TRelationshipTemplate[]): SubstituteGroupsAction  {
+    setGroupsSubstitutions(substitutionNodeIds: TNodeTemplate[], substitutionRelationshipIds: TRelationshipTemplate[]): SetGroupsSubstitutionsAction  {
         return {
-            type: TopologyRendererActions.HIDE_NODES_AND_RELATIONSHIPS,
-            substitutionNodeIds: substitutionNodeIds,
-            substitutionRelationshipIds: substitutionRelationshipIds
+            type: TopologyRendererActions.GROUPS_SUBSTITUTIONS_MODIFIED,
+            substitutionNodes: substitutionNodeIds,
+            substitutionRelationships: substitutionRelationshipIds
         };
 
     }
