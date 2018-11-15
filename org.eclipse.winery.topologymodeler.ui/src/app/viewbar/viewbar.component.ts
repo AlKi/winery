@@ -150,14 +150,16 @@ export class ViewbarComponent implements OnDestroy {
             default:{
                 // most probably a "hide group" or "substitute group" button from dropdown, if so...
                 if(event.target.id.startsWith("hideGroup")){
-                    // check if there are nodes of groups substituted, if needed de-substitute them first
-                    if(this.visualModificationMode != VisualModificationMode.HIDENODES){
-                        this.visualModificationMode = VisualModificationMode.HIDENODES;
-                        // TODO: de-substitute nodes of groups
-                        // TODO: reset those button states to false
-                    }
                     // ...remove the "hideGroup" prefix to get the group id
                     let groupId: string = event.target.id.replace("hideGroup", "");
+
+                    // check if this group is substituted. If it is, de-substitute it first
+                    if(this.viewbarButtonsState.buttonsState.substituteGroupButtonStates[groupId] == true){
+                        // imitate a button state change to de-substitute this group
+                        let dummyEvent = {target:{id: "substituteGroup" + groupId}};
+                        this.toggleButton(dummyEvent);
+                    }
+
                     // hide or show the groups nodes according to the button's toggle state
                     // beware: global state gets changed afterwards, so we need to work with the previous, not yet toggled button state
                     if(this.viewbarButtonsState.buttonsState.hideGroupButtonStates[groupId] == false){
@@ -168,15 +170,18 @@ export class ViewbarComponent implements OnDestroy {
                         this.showGroupById(groupId);
                     }
                     this.ngRedux.dispatch(this.actions.modifyGroupsVisibilityButtonState(groupId));
+
                 }else if(event.target.id.startsWith("substituteGroup")){
-                    // check if there are nodes of groups hidden, if needed de-substitute them first
-                    if(this.visualModificationMode != VisualModificationMode.SUBSTITUTENODES){
-                        this.visualModificationMode = VisualModificationMode.SUBSTITUTENODES;
-                        // TODO: un-hide nodes of groups
-                        // TODO: reset those button states to false
-                    }
                     // ...remove the "substituteGroup" prefix to get the group id
                     let groupId: string = event.target.id.replace("substituteGroup", "");
+
+                    // check if this group is hidden. If it is, un-hide it first
+                    if(this.viewbarButtonsState.buttonsState.hideGroupButtonStates[groupId] == true){
+                        // imitate a button state change to un-hide this group
+                        let dummyEvent = {target:{id: "hideGroup" + groupId}};
+                        this.toggleButton(dummyEvent);
+                    }
+
                     // hide or show the groups nodes according to the button's toggle state
                     // beware: global state gets changed afterwards, so we need to work with the previous, not yet toggled button state
                     if(this.viewbarButtonsState.buttonsState.substituteGroupButtonStates[groupId] == false){
