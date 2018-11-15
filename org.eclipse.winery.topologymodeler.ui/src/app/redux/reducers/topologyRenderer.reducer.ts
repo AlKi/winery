@@ -96,8 +96,6 @@ export const TopologyRendererReducer =
     function (lastState: TopologyRendererState = INITIAL_TOPOLOGY_RENDERER_STATE, action: Action): TopologyRendererState {
         switch (action.type) {
             case TopologyRendererActions.TOGGLE_POLICIES:
-                // console.log({...lastState, buttonsState: { ...lastState.buttonsState, policiesButton:
-                // !lastState.buttonsState.policiesButton}});
                 return {
                     ...lastState,
                     buttonsState: {

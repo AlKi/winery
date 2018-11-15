@@ -66,6 +66,11 @@ export class ViewbarComponent implements OnDestroy {
     relationshipIdsToHide: string[] = [];
     substitutionNodes: TNodeTemplate[] = [];
     substitutionRelationships: TRelationshipTemplate[] = [];
+    // hiding nodes AND substituting groups in parallel
+    // does not work well.
+    // so at any given point in time,
+    // do only one of thime!
+    visualModificationMode: VisualModificationMode = VisualModificationMode.NONE;
 
     constructor(private alert: ToastrService,
                 private ngRedux: NgRedux<IWineryState>,
@@ -145,6 +150,12 @@ export class ViewbarComponent implements OnDestroy {
             default:{
                 // most probably a "hide group" or "substitute group" button from dropdown, if so...
                 if(event.target.id.startsWith("hideGroup")){
+                    // check if there are nodes of groups substituted, if needed de-substitute them first
+                    if(this.visualModificationMode != VisualModificationMode.HIDENODES){
+                        this.visualModificationMode = VisualModificationMode.HIDENODES;
+                        // TODO: de-substitute nodes of groups
+                        // TODO: reset those button states to false
+                    }
                     // ...remove the "hideGroup" prefix to get the group id
                     let groupId: string = event.target.id.replace("hideGroup", "");
                     // hide or show the groups nodes according to the button's toggle state
@@ -158,6 +169,12 @@ export class ViewbarComponent implements OnDestroy {
                     }
                     this.ngRedux.dispatch(this.actions.modifyGroupsVisibilityButtonState(groupId));
                 }else if(event.target.id.startsWith("substituteGroup")){
+                    // check if there are nodes of groups hidden, if needed de-substitute them first
+                    if(this.visualModificationMode != VisualModificationMode.SUBSTITUTENODES){
+                        this.visualModificationMode = VisualModificationMode.SUBSTITUTENODES;
+                        // TODO: un-hide nodes of groups
+                        // TODO: reset those button states to false
+                    }
                     // ...remove the "substituteGroup" prefix to get the group id
                     let groupId: string = event.target.id.replace("substituteGroup", "");
                     // hide or show the groups nodes according to the button's toggle state
@@ -482,25 +499,35 @@ export class ViewbarComponent implements OnDestroy {
      */
     clickHideUnhideNodes(){
         //this.alert.info(typeof this.unformattedTopologyTemplate.nodeTemplates);
-        var nodeIdsToHide: string[] = [];
+        var additionalNodeIdsToHide: string[] = [];
         // iterate over all node components
         for( var nodeIndex=0; nodeIndex<this.unformattedTopologyTemplate.nodeTemplates.length; nodeIndex++ ){
             if(this.viewbarButtonsState.buttonsState.hideHardwareButton){
                 if(this.checkIfNodeTypeDerivedOf(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].type, '{http://www.example.org/tosca/nodetypes}Hardware-Node_0.0.1-w1-wip1')){
                     // add this node to the list of nodes to be set invisible
-                    nodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
+                    additionalNodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
                 }
             }
             if(this.viewbarButtonsState.buttonsState.hideSoftwareButton){
                 if(!this.checkIfNodeTypeDerivedOf(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].type, '{http://www.example.org/tosca/nodetypes}Hardware-Node_0.0.1-w1-wip1')){
                     // add this node to the list of nodes to be set invisible
-                    nodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
+                    additionalNodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
                 }
             }
         }
-        this.alert.info("Hiding " + nodeIdsToHide.length + " Nodes");
+        this.nodeIdsToHide.forEach(nodeId => {
+            for(let newNodeIdIndex = 0; newNodeIdIndex < additionalNodeIdsToHide.length; newNodeIdIndex++){
+                if(additionalNodeIdsToHide[newNodeIdIndex] === nodeId){
+                    // node already hidden, quit this function
+                    return;
+                }
+                // "else" if this node is not already hidden, add it to the array of nodes to be hidden
+                this.nodeIdsToHide.push(nodeId);
+            }
+        });
+        this.alert.info("Hiding " + additionalNodeIdsToHide.length + " Nodes");
         this.checkRelationshipsToHide();
-        console.log("hiding nodes: " + JSON.stringify(nodeIdsToHide));
+        console.log("hiding nodes: " + JSON.stringify(additionalNodeIdsToHide));
         console.log("hiding relationships: " + JSON.stringify(this.relationshipIdsToHide));
         this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
     }
@@ -620,4 +647,11 @@ export class ViewbarComponent implements OnDestroy {
 
      return parentNodeTypeNames;
      }*/
+}
+
+
+enum VisualModificationMode {
+    HIDENODES,
+    SUBSTITUTENODES,
+    NONE
 }

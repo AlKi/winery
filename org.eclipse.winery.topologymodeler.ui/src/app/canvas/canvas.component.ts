@@ -258,11 +258,11 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
      */
     updateSubstitutionRelationships(substitutionRelationships: TRelationshipTemplate[]){
         // delete removed substitution relationships first!
-        let removedSubstitutionRelationships: TRelationshipTemplate[] = [];
+        // there is no automated check for relationships to be removed.
         this.substitutionRelationshipTemplates.forEach(oldRel => {
             let stillExisting = false;
             for(let newIndex = 0; newIndex < substitutionRelationships.length; newIndex++){
-                console.log("oldRel.id="+oldRel.id + " newRel id=" + substitutionRelationships[newIndex].id);
+                //console.log("oldRel.id="+oldRel.id + " newRel id=" + substitutionRelationships[newIndex].id);
                 if(oldRel.id === substitutionRelationships[newIndex].id){
                     stillExisting = true;
                     break;
@@ -270,40 +270,10 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
             }
             if(!stillExisting){
                 this.unPaintRelationship(oldRel);
-                removedSubstitutionRelationships.push(oldRel);
-                // add this relationship to the list of relationships to be deleted
-                /*for(let relTempIndex = 0; relTempIndex < this.allRelationshipTemplates.length; relTempIndex++){
-                    if(this.allRelationshipTemplates[relTempIndex].id === oldRel.id){
-                        console.log("removed substitution relationship found: " + this.allRelationshipTemplates[relTempIndex].id);
-                        removedSubstitutionRelationships.push(this.allRelationshipTemplates[relTempIndex]);
-                    }
-                }*/
             }
         });
 
         // save new list of substitution relationships
-        this.substitutionRelationshipTemplates = substitutionRelationships;
-        console.log("removed substitution relationships: ");
-        console.log(removedSubstitutionRelationships);
-        // then delete removed substitution relationships
-        /*if(removedSubstitutionRelationships.length > 0){
-            // remove the connection for this relationship from the canvas
-            removedSubstitutionRelationships.forEach(removedRel => this.unPaintRelationship(removedRel));
-
-            removedSubstitutionRelationships.forEach(removedRel => {
-                this.newJsPlumbInstance.getAllConnections().some(con => {
-                   if(con.id === removedRel.id){
-                       console.log("deleting substitution connection " + con.id);
-                       this.newJsPlumbInstance.deleteConnection(con);
-                       // return true to abort
-                       return true;
-                   }
-                   console.log("not deleting substitution connection " + con.id);
-                   // return false to continue
-                   return false;
-                });
-            });
-        }*/
         this.substitutionRelationshipTemplates = substitutionRelationships;
         this.updateRelationshipsForViewChange(this.allRelationshipTemplates);
         console.log("updated Substitution Relationship Templates in canvas");
@@ -324,36 +294,8 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
      * @param newHiddenRelationshipIds
      */
     updateHiddenRelationshipIds(newHiddenRelationshipIds: string[]){
-
-        let unhiddenRelationships: TRelationshipTemplate[] = [];
-        this.hiddenRelationshipIds.forEach(oldRelId => {
-            let stillHidden = false;
-            for(let newIndex = 0; newIndex < newHiddenRelationshipIds.length; newIndex++){
-                if(oldRelId === newHiddenRelationshipIds[newIndex]){
-                    stillHidden = true;
-                    break;
-                }
-            }
-            if(!stillHidden){
-                //console.log("relationship not hidden anymore: " + oldRelId);
-                // (re)draw relationship
-                for(let relTempIndex = 0; relTempIndex < this.allRelationshipTemplates.length; relTempIndex++){
-                    if(this.allRelationshipTemplates[relTempIndex].id === oldRelId){
-                        //console.log("redrawing relationship");
-                        unhiddenRelationships.push(this.allRelationshipTemplates[relTempIndex]);
-                    }
-                }
-            }
-        });
-
         // save new list of hidden relationships
         this.hiddenRelationshipIds = newHiddenRelationshipIds;
-        // then paint unhidden relationships
-        if(unhiddenRelationships.length > 0){
-            // TODO: does not work properly, relationships are not removeable afterwards
-            //unhiddenRelationships.forEach(unhiddenRelationship => this.manageRelationshipsf(unhiddenRelationship));
-            this.updateRelationshipsForViewChange(unhiddenRelationships);
-        }
         // then make sure to update everything
         this.updateRelationshipsForViewChange(this.allRelationshipTemplates);
         console.log("updated hidden Relationship IDs in canvas");
@@ -365,9 +307,6 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
      */
     updateHiddenNodeIds(hiddenNodeIds: string[]){
         this.hiddenNodeIds = hiddenNodeIds;
-        for(let hiddenIndex = 0; hiddenIndex < hiddenNodeIds.length; hiddenIndex++){
-            this.newJsPlumbInstance.deleteConnectionsForElement(hiddenNodeIds[hiddenIndex]);
-        }
         this.updateRelationshipsForViewChange(this.allRelationshipTemplates);
     }
 
