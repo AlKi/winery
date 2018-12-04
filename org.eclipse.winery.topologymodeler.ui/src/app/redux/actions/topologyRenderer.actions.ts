@@ -64,6 +64,8 @@ export class TopologyRendererActions {
     static TOGGLE_SUBSTITUTE_HARDWARE = 'TOGGLE_SUBSTITUTE_HARDWARE';
     static TOGGLE_SUBSTITUTE_SOFTWARE = 'TOGGLE_SUBSTITUTE_SOFTWARE';
     static TOGGLE_SUBSTITUTE_SELECTION = 'TOGGLE_SUBSTITUTE_SELECTION';
+    static TOGGLE_SUBSTITUTE_CABLES = 'TOGGLE_SUBSTITUTE_CABLES';
+    static TOGGLE_SUBSTITUTE_ADAPTERS_AND_CABLES = 'TOGGLE_SUBSTITUTE_ADAPTERS_AND_CABLES';
     static TOGGLE_HIDE_HARDWARE = 'TOGGLE_HIDE_HARDWARE';
     static TOGGLE_HIDE_SOFTWARE = 'TOGGLE_HIDE_SOFTWARE';
     static TOGGLE_HIDE_NONCOMPUTING = 'TOGGLE_HIDE_NONCOMPUTING';
@@ -156,6 +158,12 @@ export class TopologyRendererActions {
     }
     toggleSubstituteSelection(): Action {
         return {type: TopologyRendererActions.TOGGLE_SUBSTITUTE_SELECTION};
+    }
+    toggleSubstituteCables(): Action {
+        return {type: TopologyRendererActions.TOGGLE_SUBSTITUTE_CABLES};
+    }
+    toggleSubstituteAdaptersAndCables(): Action {
+        return {type: TopologyRendererActions.TOGGLE_SUBSTITUTE_ADAPTERS_AND_CABLES};
     }
 
     toggleHideHardware(): Action {

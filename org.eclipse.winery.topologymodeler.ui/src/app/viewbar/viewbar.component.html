@@ -14,7 +14,7 @@
 
 <nav class="viewbar viewbar-light bg-faded" *ngIf="viewbarButtonsState.buttonsState.showViewBarButton && !hideNavBarState" [@viewbarInOut]>
     <form class="form-inline" style="justify-content: center;">
-        <button
+        <!--<button
             class="btn btn-sm align-middle dark-button-style"
             type="button"
             id="substituteHardware"
@@ -27,7 +27,7 @@
             class="btn btn-sm align-middle dark-button-style"
             type="button"
             id="substituteSoftware"
-            tooltip="Substitute currently selected nodes by one substitution node"
+            tooltip="Substitute a new node for all software nodes"
             (click)="toggleButton($event)"
             [style.background-color]="getStyle(viewbarButtonsState.buttonsState.substituteSoftwareButton)">
             Substitute Software
@@ -36,29 +36,11 @@
             class="btn btn-sm align-middle dark-button-style"
             type="button"
             id="substituteSelection"
-            tooltip="Substitute currently selected nodes by one substitution node"
+            tooltip="Substitute a new node for currently selected nodes"
             (click)="toggleButton($event)"
             [style.background-color]="getStyle(viewbarButtonsState.buttonsState.substituteSelectionButton)">
             Substitute Selection
-        </button>
-        <button
-            class="btn btn-sm align-middle dark-button-style"
-            type="button"
-            id="substituteCables"
-            tooltip="Substitute cable nodes"
-            (click)="toggleButton($event)"
-            [style.background-color]="getStyle(viewbarButtonsState.buttonsState.substituteCablesButton)">
-            Substitute Cables
-        </button>
-        <button
-            class="btn btn-sm align-middle dark-button-style"
-            type="button"
-            id="substituteAdaptersAndCables"
-            tooltip="Substitute adapter nodes"
-            (click)="toggleButton($event)"
-            [style.background-color]="getStyle(viewbarButtonsState.buttonsState.substituteAdaptersButton)">
-            Substitute Adapters
-        </button>
+        </button>-->
 
         <div class="btn-group" style="margin-left: 4px" dropdown>
             <button dropdownToggle type="button" class="btn btn-sm dark-button-style align-middle dropdown-toggle">
@@ -76,36 +58,25 @@
                 </li>
             </ul>
         </div>
+        <button
+            class="btn btn-sm align-middle dark-button-style"
+            type="button"
+            id="substituteCables"
+            tooltip="Substitute cable nodes for relationships"
+            (click)="toggleButton($event)"
+            [style.background-color]="getStyle(viewbarButtonsState.buttonsState.substituteCablesButton)">
+            Substitute Cable Nodes
+        </button>
+        <button
+            class="btn btn-sm align-middle dark-button-style"
+            type="button"
+            id="substituteAdaptersAndCables"
+            tooltip="Substitute adapter and cable nodes for relationships"
+            (click)="toggleButton($event)"
+            [style.background-color]="getStyle(viewbarButtonsState.buttonsState.substituteAdaptersAndCablesButton)">
+            Substitute Adapter + Cable Nodes
+        </button>
 
-        <div class="btn-group" style="margin-left: 4px" dropdown>
-            <button
-                class="btn btn-sm align-middle dark-button-style"
-                type="button"
-                id="hideHardware"
-                tooltip="Hide hardware nodes and relationships including them"
-                [style.background-color]="getStyle(viewbarButtonsState.buttonsState.hideHardwareButton)"
-                (click)="toggleButton($event)">
-                Hardware Nodes
-            </button>
-            <button
-                class="btn btn-sm align-middle dark-button-style"
-                type="button"
-                id="hideSoftware"
-                tooltip="Hide software nodes and relationships including them"
-                (click)="toggleButton($event)"
-                [style.background-color]="getStyle(viewbarButtonsState.buttonsState.hideSoftwareButton)">
-                Software Nodes
-            </button>
-            <button
-                class="btn btn-sm align-middle dark-button-style"
-                type="button"
-                id="hideNoncomputing"
-                tooltip="Hide hardware nodes which do not have relationships to any software nodes"
-                (click)="toggleButton($event)"
-                [style.background-color]="getStyle(viewbarButtonsState.buttonsState.hideNoncomputingButton)">
-                Non Software related
-            </button>
-        </div>
         <div class="btn-group" style="margin-left: 4px" dropdown>
             <button dropdownToggle type="button" class="btn btn-sm dark-button-style align-middle dropdown-toggle">
                 Hide Groups <span class="caret"></span>
@@ -122,5 +93,32 @@
                 </li>
             </ul>
         </div>
+        <button
+            class="btn btn-sm align-middle dark-button-style"
+            type="button"
+            id="hideHardware"
+            tooltip="Hide hardware nodes and relationships including them"
+            [style.background-color]="getStyle(viewbarButtonsState.buttonsState.hideHardwareButton)"
+            (click)="toggleButton($event)">
+            Hide Hardware Nodes
+        </button>
+        <button
+            class="btn btn-sm align-middle dark-button-style"
+            type="button"
+            id="hideSoftware"
+            tooltip="Hide software nodes and relationships including them"
+            (click)="toggleButton($event)"
+            [style.background-color]="getStyle(viewbarButtonsState.buttonsState.hideSoftwareButton)">
+            Hide Software Nodes
+        </button>
+        <button
+            class="btn btn-sm align-middle dark-button-style"
+            type="button"
+            id="hideNoncomputing"
+            tooltip="Hide hardware nodes which do not have relationships to any software nodes"
+            (click)="toggleButton($event)"
+            [style.background-color]="getStyle(viewbarButtonsState.buttonsState.hideNoncomputingButton)">
+            Hide Non Software related nodes
+        </button>
     </form>
 </nav>

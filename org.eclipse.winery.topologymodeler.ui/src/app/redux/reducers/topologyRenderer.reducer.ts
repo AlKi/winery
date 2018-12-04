@@ -50,6 +50,8 @@ export interface TopologyRendererState {
         hideGroupButtonStates?: any;
         // has .[groupid] properties, which are boolean
         substituteGroupButtonStates?: any;
+        substituteCablesButton?: boolean;
+        substituteAdaptersAndCablesButton?: boolean;
     };
     nodesToSelect?: string[];
     nodesToHide: string[];
@@ -82,7 +84,9 @@ export const INITIAL_TOPOLOGY_RENDERER_STATE: TopologyRendererState = {
         substituteHardwareButton: false,
         substituteSoftwareButton: false,
         substituteSelectionButton: false,
-        hideGroupButtonStates: {}
+        hideGroupButtonStates: {},
+        substituteCablesButton: false,
+        substituteAdaptersAndCablesButton: false
     },
     nodesToHide: [],
     relationshipsToHide: [],

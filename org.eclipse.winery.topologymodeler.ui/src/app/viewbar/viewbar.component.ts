@@ -92,12 +92,6 @@ export class ViewbarComponent implements OnDestroy {
      */
     setButtonsState(newButtonsState: TopologyRendererState): void {
         this.viewbarButtonsState = newButtonsState;
-        if (!this.viewbarButtonsState.buttonsState.splitTopologyButton) {
-            this.splittingOngoing = false;
-        }
-        if (!this.viewbarButtonsState.buttonsState.matchTopologyButton) {
-            this.matchingOngoing = false;
-        }
     }
 
     /**
@@ -145,6 +139,16 @@ export class ViewbarComponent implements OnDestroy {
             case 'substituteSelection': {
                 this.ngRedux.dispatch(this.actions.toggleSubstituteSelection());
                 console.log(JSON.stringify(this.groups));
+                break;
+            }
+            case 'substituteCables': {
+                this.ngRedux.dispatch(this.actions.toggleSubstituteCables());
+                this.clickSubstituteCables();
+                break;
+            }
+            case 'substituteAdaptersAndCables': {
+                this.ngRedux.dispatch(this.actions.toggleSubstituteAdaptersAndCables());
+                this.clickSubstituteAdaptersAndCables();
                 break;
             }
             default:{
@@ -211,7 +215,7 @@ export class ViewbarComponent implements OnDestroy {
      * @param groupName
      */
     hideGroupById(groupId: string){
-        console.log(JSON.stringify(this.groups));
+        console.log(this.groups);
         for(let groupIndex=0; groupIndex<this.groups.length; groupIndex++){
             if(this.groups[groupIndex].id === groupId){
                 this.hideGroup(this.groups[groupIndex]);
@@ -256,7 +260,7 @@ export class ViewbarComponent implements OnDestroy {
      * @param groupName
      */
     showGroupById(groupId: string){
-        console.log(JSON.stringify(this.groups));
+        console.log(this.groups);
         for(let groupIndex=0; groupIndex<this.groups.length; groupIndex++){
             if(this.groups[groupIndex].id === groupId){
                 this.showGroup(this.groups[groupIndex]);
@@ -503,7 +507,6 @@ export class ViewbarComponent implements OnDestroy {
      * hides or un-hides all nodes which are oft the given node type or children of it, according to the activated buttons
      */
     clickHideUnhideNodes(){
-        //this.alert.info(typeof this.unformattedTopologyTemplate.nodeTemplates);
         var additionalNodeIdsToHide: string[] = [];
         // iterate over all node components
         for( var nodeIndex=0; nodeIndex<this.unformattedTopologyTemplate.nodeTemplates.length; nodeIndex++ ){
@@ -537,6 +540,279 @@ export class ViewbarComponent implements OnDestroy {
         this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
     }
 
+
+    /**
+     * hides cable nodes and replaces their relationships with direct connection relationships
+     * First looks up all cable nodes which are not hidden
+     * Then replaces them and their relationships (relationships to substitution nodes as well) with substitution relationships
+     */
+    clickSubstituteCables(){
+
+        /** List of all cable nodes */
+        let cableNodes: TNodeTemplate[] = [];
+        /** List of all cable nodes we need to substitute (not the already hidden ones!) */
+        let cableNodesToSubstitute: TNodeTemplate[] = [];
+
+        // iterate over all node components and find all cable nodes
+        for( var nodeIndex=0; nodeIndex<this.unformattedTopologyTemplate.nodeTemplates.length; nodeIndex++ ){
+            if(this.checkIfNodeTypeDerivedOf(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].type, '{http://www.example.org/tosca/nodetypes}Cable_Node_0.0.1-w1-wip1')){
+                // add this node to the list of nodes to be set invisible
+                cableNodes.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex]);
+            }
+        }
+
+        // find all non-hidden nodes of those cable nodes
+        cableNodes.forEach(cableNode => {
+            let isNotHidden = true;
+            for(let hiddenIndex = 0; hiddenIndex < this.nodeIdsToHide.length; hiddenIndex++){
+                if(cableNode.id === this.nodeIdsToHide[hiddenIndex]){
+                    isNotHidden = false;
+                    break;
+                }
+            }
+            if(isNotHidden){
+                cableNodesToSubstitute.push(cableNode);
+            }
+        });
+
+        console.log("cableNodes:");
+        console.log(cableNodes);
+        console.log("cableNodesToSubstitute:");
+        console.log(cableNodesToSubstitute);
+
+        /** List of all relationships to or from those non-hidden cable nodes */
+        let relationShipsOfCablesToSubstitute: TRelationshipTemplate[] = [];
+
+        // find all relationships of those cable nodes
+        cableNodesToSubstitute.forEach(node => {
+            // iterate all relationshipTemplates and check, if this node is the target or source.
+            for(let relTempIndex=0; relTempIndex<this.unformattedTopologyTemplate.relationshipTemplates.length; relTempIndex++){
+                if((this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].sourceElement.ref === node.id)
+                    || (this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].targetElement.ref === node.id)){
+                    // if so, and if this relationship is not hidden...
+                    let relationshipNotHidden: boolean = true;
+                    for(let hiddenRelIndex = 0; hiddenRelIndex < this.relationshipIdsToHide.length; hiddenRelIndex++){
+                        if(this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].id === this.relationshipIdsToHide[hiddenRelIndex]){
+                            relationshipNotHidden = false;
+                            break;
+                        }
+                    }
+                    // ... and not already on the list of relationships to be substituted ...
+                    if(relationshipNotHidden) {
+                        for (let hiddenRelIndex = 0; hiddenRelIndex < relationShipsOfCablesToSubstitute.length; hiddenRelIndex++) {
+                            if (this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].id === relationShipsOfCablesToSubstitute[hiddenRelIndex].id) {
+                                relationshipNotHidden = false;
+                                break;
+                            }
+                        }
+                    }
+                    // ...add this relationship to the list of those to be substituted
+                    if(relationshipNotHidden){
+                        relationShipsOfCablesToSubstitute.push(this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex]);
+                    }
+                }
+            }
+            // iterate all substitution relationshipTemplates and check, if this node is the target or source.
+            /* TODO
+            for(let relTempIndex=0; relTempIndex<this.substitutionRelationships.length; relTempIndex++){
+                if((this.substitutionRelationships[relTempIndex].sourceElement.ref === nodeId)
+                    || (this.substitutionRelationships[relTempIndex].targetElement.ref === nodeId)){
+                    // if so, add this substitution relationship to the list of substitutions to be (further) substituted
+                    substitutionRelationshipsToSubstitute.push(this.substitutionRelationships[relTempIndex]);
+                }
+            }*/
+        });
+
+        console.log("relationShipsOfCablesToSubstitute:");
+        console.log(relationShipsOfCablesToSubstitute);
+
+        /** all non-hidden nodes connected to cables ("Edge"-nodes) */
+        let edgeNodes: TNodeTemplate[] = [];
+        // for each relationship to be substituted, find all connected, non-hidden nodes ("Edge"-nodes)
+        relationShipsOfCablesToSubstitute.forEach(rel => {
+            // for each node, check if it is hidden or a cable node, if it is, continue with the next
+            this.unformattedTopologyTemplate.nodeTemplates.forEach(nodeTemplate => {
+                for(let hiddenIndex = 0; hiddenIndex < this.nodeIdsToHide.length; hiddenIndex++){
+                    if(nodeTemplate.id === this.nodeIdsToHide[hiddenIndex]){
+                        // node hidden, nothing to do
+                        return;
+                    }
+                }
+                for(let cableIndex = 0; cableIndex < cableNodesToSubstitute.length; cableIndex++){
+                    if(cableNodesToSubstitute[cableIndex].id == nodeTemplate.id){
+                        // node is cable node, nothing to do
+                        return;
+                    }
+                }
+                // if it is not hidden, check if it is source or target of this relationship of a cable node
+                if((rel.sourceElement.ref === nodeTemplate.id) || (rel.targetElement.ref == nodeTemplate.id)){
+                    // If it is, and not already in the list of edge nodes, add it
+                    let addToList = true;
+                    for(let edgeIndex = 0; edgeIndex < edgeNodes.length; edgeIndex++){
+                        if(nodeTemplate.id === edgeNodes[edgeIndex].id){
+                            addToList = false;
+                        }
+                    }
+                    if(addToList){
+                        edgeNodes.push(nodeTemplate);
+                    }
+                }
+            });
+        });
+
+        console.log("edgeNodes:");
+        console.log(edgeNodes);
+
+        // connections made by cables
+        let cableConnections: BreadthSearchPath[] = this.findHardwareConnections(relationShipsOfCablesToSubstitute,
+                                                                                cableNodesToSubstitute,
+                                                                                edgeNodes);
+
+        console.log("found these cable connections:");
+        console.log(cableConnections);
+
+        /** cable node substitution relationships */
+        let cableConnectionSubstitutionRelationships: TRelationshipTemplate[] = [];
+        cableConnections.forEach(conn => {
+           cableConnectionSubstitutionRelationships.push(conn.createRelationshipTemplate());
+        });
+
+        // crap does not work: this.substitutionRelationships.push(cableConnectionSubstitutionRelationships);
+        cableConnectionSubstitutionRelationships.forEach(rel => {this.substitutionRelationships.push(rel)});
+
+        this.alert.info("Hiding " + cableNodesToSubstitute.length + " Nodes");
+        this.checkRelationshipsToHide();
+        console.log("hiding nodes: ");
+        console.log(cableNodesToSubstitute);
+        console.log("hiding relationships: ");
+        console.log(this.relationshipIdsToHide);
+        console.log("substitution relationships:");
+        console.log(this.substitutionRelationships);
+        this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
+    }
+
+
+
+    clickSubstituteAdaptersAndCables(){
+        console.log("NIY!");
+        // TODO
+    }
+
+
+    clickFindNetworks(){
+
+    }
+
+
+    /**
+     * finds all hardware plane data, signal and power connections
+     * basically implements breadth search for every edgeNodeId
+     * @param relationships
+     * @param cableNodes
+     * @param edgeNodes
+     */
+    findHardwareConnections(relationships: TRelationshipTemplate[], cableNodes: TNodeTemplate[], edgeNodes: TNodeTemplate[]): BreadthSearchPath[] {
+
+        let breadthSearchPaths: BreadthSearchPath[] = [];
+        let newBreadthSearchPaths: BreadthSearchPath[] = [];
+        let finalizedPaths: BreadthSearchPath[] = [];
+        // start looking for all connections emerging from each edge node
+        // thus create for every node a path starting there
+        // TODO: do this for every port as well!
+        edgeNodes.forEach(node => {
+            let source: HardwareConnectionEndpoint = new HardwareConnectionEndpoint();
+            source.nodeId = node.id;
+            newBreadthSearchPaths.push(new BreadthSearchPath([node.id], source));
+
+        });
+        console.log(JSON.stringify(newBreadthSearchPaths));
+        console.log("################################");
+        let counter = 0;
+
+        do {
+            counter++;
+            breadthSearchPaths = newBreadthSearchPaths;
+            newBreadthSearchPaths = [];
+            console.log(JSON.stringify(breadthSearchPaths));
+            console.log(counter);
+            breadthSearchPaths.forEach(entry => {
+                relationships.forEach(rel => {
+                    /*console.log("");
+                    console.log(entry.lastTarget.nodeId);
+                    console.log(entry.nodeIdsVisited.length);
+                    console.log(rel.sourceElement.ref);
+                    console.log(rel.targetElement.ref);*/
+
+                    // look for both target and source elements if any is the last visited node
+                    // TODO: check ports as well!
+                    let nextNodeId = "";
+                    if(rel.sourceElement.ref === entry.lastTarget.nodeId) {
+                        nextNodeId = rel.targetElement.ref;
+                    } else if(rel.targetElement.ref === entry.lastTarget.nodeId) {
+                        nextNodeId = rel.sourceElement.ref;
+                    } else {
+                        // no relationship regarding the last "visited" node, return.
+                        return;
+                    }
+
+                    // if the target is already in the list of visited nodes, return
+                    for(let visitedIndex = 0; visitedIndex < entry.nodeIdsVisited.length; visitedIndex++){
+                            if(entry.nodeIdsVisited[visitedIndex] === nextNodeId) {
+                                return;
+                            }
+                    }
+
+                    // add this node to the visited node ids (and in case there are multiple paths and
+                    // one or more were already found, "clone" this path and continue it this way
+                    let newEntry: BreadthSearchPath = entry.getClone();
+                    newEntry.setNextVisitedNode(nextNodeId);
+
+                    // check if the target is an edge node, then we found a connection
+                    for(let edgeNodeId = 0; edgeNodeId < edgeNodes.length; edgeNodeId++){
+                        if(edgeNodes[edgeNodeId].id === nextNodeId){
+                            // if we found a connection to an edge node, no further work to do for this one
+                            // (don't accidentally continue, this node is not a cable node!)
+                            if(newEntry.finalize()){
+                                // we found a connection!
+                                finalizedPaths.push(newEntry);
+                            }// else something is broken, then ignore this "loose end" and return anyway (should not happen)
+                            return;
+                        }
+                    }
+                    // else we are not done yet, so the next round check this path
+                    newBreadthSearchPaths.push(newEntry);
+
+
+                });
+            });
+        }while(newBreadthSearchPaths.length > 0);
+
+        console.log("finalized paths:");
+        console.log(finalizedPaths);
+
+
+        let cleanedConnections: BreadthSearchPath[] = [];
+        // clean from all duplicates (all connections can be found from both ends, don't erase "parallel" connections!)
+        // check for every found path/connection if there is one with the same source/target (TODO: check ports!)
+        // if not, add it to the cleaned list of connections/paths
+
+        for(let pathIndex = 0; pathIndex < finalizedPaths.length; pathIndex++){
+            let noDuplicate = true;
+            for(let searchIndex = 0; searchIndex < pathIndex; searchIndex++){
+                if(finalizedPaths[pathIndex].source.equals(finalizedPaths[searchIndex].lastTarget)
+                        && (finalizedPaths[pathIndex].lastTarget.equals(finalizedPaths[searchIndex].source))) {
+                    noDuplicate = false;
+                    break;
+                }
+            }
+            if(noDuplicate){
+                cleanedConnections.push(finalizedPaths[pathIndex]);
+            }
+        }
+
+        return cleanedConnections;
+    }
+
     /**
      *
      * @param nodeTypeName qName of a nodeType to be checked if it is a child nodeType of the second parameter 'parentNodeTypeName'
@@ -544,8 +820,6 @@ export class ViewbarComponent implements OnDestroy {
      * @returns {boolean} true if parentNodeTypeName is any parent node type qName of the given nodeTypeName qname
      */
     private checkIfNodeTypeDerivedOf(nodeTypeName: string, parentNodeTypeName): boolean{
-        // add this nodes type
-        var parentNodeTypeNames: string[] = new Array(nodeTypeName);
         var parentNodeTypeFound: boolean = false;
         var currentParentNodeTypeName: string = nodeTypeName;
 
@@ -584,18 +858,17 @@ export class ViewbarComponent implements OnDestroy {
     }
 
     /**
-     * checks all relationships for hidden sources/targets
+     * checks all relationships for hidden sources/targets and hides them if at least one of them is hidden
      */
     checkRelationshipsToHide(): void{
         this.relationshipIdsToHide = [];
         // iterate all relationshipTemplates and check, if a target or source is to be hidden. If so, add the relationship to the hidden ones as well
         for(let relTempIndex=0; relTempIndex<this.unformattedTopologyTemplate.relationshipTemplates.length; relTempIndex++){
-            checkThisRelationship:
             for(let hiddenNodeTypeIndex=0; hiddenNodeTypeIndex<this.nodeIdsToHide.length; hiddenNodeTypeIndex++){
                 if((this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].sourceElement.ref === this.nodeIdsToHide[hiddenNodeTypeIndex])
                         || (this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].targetElement.ref === this.nodeIdsToHide[hiddenNodeTypeIndex])){
                     this.relationshipIdsToHide.push(this.unformattedTopologyTemplate.relationshipTemplates[relTempIndex].id);
-                    break checkThisRelationship;
+                    break;
                 }
             }
         }
@@ -659,4 +932,93 @@ enum VisualModificationMode {
     HIDENODES,
     SUBSTITUTENODES,
     NONE
+}
+
+
+
+class HardwareConnectionEndpoint{
+    nodeId: string;
+    portId: string = "";
+
+    equals(otherEndpoint: HardwareConnectionEndpoint): boolean{
+        return ((this.nodeId === otherEndpoint.nodeId) && (this.portId === otherEndpoint.portId));
+    }
+
+    getClone():HardwareConnectionEndpoint{
+        let clone: HardwareConnectionEndpoint = new HardwareConnectionEndpoint();
+        clone.nodeId = this.nodeId;
+        clone.portId = this.portId;
+        return clone;
+    }
+}
+
+
+class BreadthSearchPath{
+    //hardwareConnection: HardwareConnection;
+    finalized: boolean = false;
+    nodeIdsVisited: string[] = [];
+    //relationshipsVisited: string[] = [];
+    source: HardwareConnectionEndpoint;
+    lastTarget: HardwareConnectionEndpoint;
+
+    /**
+     * hwConnection
+     * @param nodesVisited first node visited or list of
+     * @param source is the starting nodes id and its ports id
+     * @param lastTarget
+     */
+    constructor(nodesVisited: string[], source: HardwareConnectionEndpoint, lastTarget?: HardwareConnectionEndpoint){
+        this.nodeIdsVisited = nodesVisited;
+        this.source = source;
+        if(lastTarget){
+            this.lastTarget = lastTarget
+        }else{
+            this.lastTarget = source.getClone();
+        }
+
+    }
+
+    setNextVisitedNode(nodeId: string, portId?: string){
+        this.nodeIdsVisited.push(nodeId);
+        this.lastTarget.nodeId = nodeId;
+        if(portId){
+            this.lastTarget.portId = portId;
+        }else{
+            portId = "";
+        }
+    }
+
+    // returns true if there is a connection between two nodes, returns false if there is no further node involved
+    finalize(): boolean {
+        this.finalized = true;
+        // return true if there are at least two nodes involved (in initial status, starting node and last visited "target" node are the same,
+        // and some nodes might not have any relationship)
+        return (this.nodeIdsVisited.length > 1);
+    }
+
+
+    createRelationshipTemplate(): TRelationshipTemplate{
+        if(!this.finalized){
+            console.log("ERROR: BreadthSearchPath not finalized. Cannot create RelationshipTemplate!");
+            return undefined;
+        }
+        let id: string = "Conn_srcnode_" + this.source.nodeId + "_srcport_" + this.source.portId + "_tgtnode_" + this.lastTarget.nodeId + "_tgtport_" + this.lastTarget.portId;
+        let name: string = "";
+
+        return new TRelationshipTemplate({ref: this.source.nodeId},{ref: this.lastTarget.nodeId}, id, name)
+    }
+
+    getClone(): BreadthSearchPath{
+        let clonedNodeIdsList: string[] = [];
+        for(let i=0; i< this.nodeIdsVisited.length; i++){
+            clonedNodeIdsList.push(this.nodeIdsVisited[i]);
+        }
+        let clonedSource = new HardwareConnectionEndpoint();
+        clonedSource.nodeId = this.source.nodeId;
+        clonedSource.portId = this.source.portId;
+        let clonedTarget = new HardwareConnectionEndpoint();
+        clonedTarget.nodeId = this.lastTarget.nodeId;
+        clonedTarget.portId = this.lastTarget.portId;
+        return new BreadthSearchPath(clonedNodeIdsList, clonedSource, clonedTarget);
+    }
 }
