@@ -664,7 +664,7 @@ export class ViewbarComponent implements OnDestroy {
         console.log(edgeNodes);
 
         // connections made by cables
-        let cableConnections: BreadthSearchPath[] = this.findHardwareConnections(relationShipsOfCablesToSubstitute,
+        let cableConnections: BreadthFirstSearchPath[] = this.findHardwareConnections(relationShipsOfCablesToSubstitute,
                                                                                 cableNodesToSubstitute,
                                                                                 edgeNodes);
 
@@ -677,18 +677,31 @@ export class ViewbarComponent implements OnDestroy {
            cableConnectionSubstitutionRelationships.push(conn.createRelationshipTemplate());
         });
 
-        // crap does not work: this.substitutionRelationships.push(cableConnectionSubstitutionRelationships);
-        cableConnectionSubstitutionRelationships.forEach(rel => {this.substitutionRelationships.push(rel)});
-
         this.alert.info("Hiding " + cableNodesToSubstitute.length + " Nodes");
         this.checkRelationshipsToHide();
+
+        for(let index=0; index < cableNodesToSubstitute.length; index++){
+            this.nodeIdsToHide.push(cableNodesToSubstitute[index].id);
+        }
+        for(let index=0; index < relationShipsOfCablesToSubstitute.length; index++){
+            this.relationshipIdsToHide.push(relationShipsOfCablesToSubstitute[index].id);
+        }
+
+        for(let index=0; index < cableConnectionSubstitutionRelationships.length; index++){
+            this.substitutionRelationships.push(cableConnectionSubstitutionRelationships[index]);
+        }
+
         console.log("hiding nodes: ");
         console.log(cableNodesToSubstitute);
         console.log("hiding relationships: ");
         console.log(this.relationshipIdsToHide);
         console.log("substitution relationships:");
         console.log(this.substitutionRelationships);
+
+        // dispatch updating global lists of hidden nodes and relationships
         this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
+        // dispatch updating global substitution relationships
+        this.ngRedux.dispatch(this.actions.setGroupsSubstitutions([], cableConnectionSubstitutionRelationships));
     }
 
 
@@ -706,36 +719,32 @@ export class ViewbarComponent implements OnDestroy {
 
     /**
      * finds all hardware plane data, signal and power connections
-     * basically implements breadth search for every edgeNodeId
+     * basically implements breadth first search for every edgeNodeId
      * @param relationships
      * @param cableNodes
      * @param edgeNodes
      */
-    findHardwareConnections(relationships: TRelationshipTemplate[], cableNodes: TNodeTemplate[], edgeNodes: TNodeTemplate[]): BreadthSearchPath[] {
+    findHardwareConnections(relationships: TRelationshipTemplate[], cableNodes: TNodeTemplate[], edgeNodes: TNodeTemplate[]): BreadthFirstSearchPath[] {
 
-        let breadthSearchPaths: BreadthSearchPath[] = [];
-        let newBreadthSearchPaths: BreadthSearchPath[] = [];
-        let finalizedPaths: BreadthSearchPath[] = [];
+        let breadthFirstSearchPaths: BreadthFirstSearchPath[] = [];
+        let newBreadthFirstSearchPaths: BreadthFirstSearchPath[] = [];
+        let finalizedPaths: BreadthFirstSearchPath[] = [];
         // start looking for all connections emerging from each edge node
         // thus create for every node a path starting there
         // TODO: do this for every port as well!
         edgeNodes.forEach(node => {
             let source: HardwareConnectionEndpoint = new HardwareConnectionEndpoint();
             source.nodeId = node.id;
-            newBreadthSearchPaths.push(new BreadthSearchPath([node.id], source));
+            newBreadthFirstSearchPaths.push(new BreadthFirstSearchPath([node.id], source));
 
         });
-        console.log(JSON.stringify(newBreadthSearchPaths));
-        console.log("################################");
         let counter = 0;
 
         do {
             counter++;
-            breadthSearchPaths = newBreadthSearchPaths;
-            newBreadthSearchPaths = [];
-            console.log(JSON.stringify(breadthSearchPaths));
-            console.log(counter);
-            breadthSearchPaths.forEach(entry => {
+            breadthFirstSearchPaths = newBreadthFirstSearchPaths;
+            newBreadthFirstSearchPaths = [];
+            breadthFirstSearchPaths.forEach(entry => {
                 relationships.forEach(rel => {
                     /*console.log("");
                     console.log(entry.lastTarget.nodeId);
@@ -764,7 +773,7 @@ export class ViewbarComponent implements OnDestroy {
 
                     // add this node to the visited node ids (and in case there are multiple paths and
                     // one or more were already found, "clone" this path and continue it this way
-                    let newEntry: BreadthSearchPath = entry.getClone();
+                    let newEntry: BreadthFirstSearchPath = entry.getClone();
                     newEntry.setNextVisitedNode(nextNodeId);
 
                     // check if the target is an edge node, then we found a connection
@@ -780,27 +789,27 @@ export class ViewbarComponent implements OnDestroy {
                         }
                     }
                     // else we are not done yet, so the next round check this path
-                    newBreadthSearchPaths.push(newEntry);
+                    newBreadthFirstSearchPaths.push(newEntry);
 
 
                 });
             });
-        }while(newBreadthSearchPaths.length > 0);
-
-        console.log("finalized paths:");
-        console.log(finalizedPaths);
+        }while(newBreadthFirstSearchPaths.length > 0);
 
 
-        let cleanedConnections: BreadthSearchPath[] = [];
-        // clean from all duplicates (all connections can be found from both ends, don't erase "parallel" connections!)
-        // check for every found path/connection if there is one with the same source/target (TODO: check ports!)
+        let cleanedConnections: BreadthFirstSearchPath[] = [];
+        // clean from all duplicates (all connections can be found from both ends, but don't erase "parallel" connections!)
+        // check for every found path/connection if there is one with the same source/target
+        // checks for ports as well (source/lastTarget are id/port combinations)
         // if not, add it to the cleaned list of connections/paths
 
         for(let pathIndex = 0; pathIndex < finalizedPaths.length; pathIndex++){
             let noDuplicate = true;
             for(let searchIndex = 0; searchIndex < pathIndex; searchIndex++){
-                if(finalizedPaths[pathIndex].source.equals(finalizedPaths[searchIndex].lastTarget)
-                        && (finalizedPaths[pathIndex].lastTarget.equals(finalizedPaths[searchIndex].source))) {
+                if((finalizedPaths[pathIndex].source.equals(finalizedPaths[searchIndex].lastTarget)
+                        && (finalizedPaths[pathIndex].lastTarget.equals(finalizedPaths[searchIndex].source)))
+                        || (finalizedPaths[pathIndex].source.equals(finalizedPaths[searchIndex].source)
+                        && (finalizedPaths[pathIndex].lastTarget.equals(finalizedPaths[searchIndex].lastTarget)))) {
                     noDuplicate = false;
                     break;
                 }
@@ -952,8 +961,11 @@ class HardwareConnectionEndpoint{
     }
 }
 
-
-class BreadthSearchPath{
+/**
+ * Data structure representing paths in breadth-first search
+ * Has some convenient functions
+ */
+class BreadthFirstSearchPath{
     //hardwareConnection: HardwareConnection;
     finalized: boolean = false;
     nodeIdsVisited: string[] = [];
@@ -999,16 +1011,20 @@ class BreadthSearchPath{
 
     createRelationshipTemplate(): TRelationshipTemplate{
         if(!this.finalized){
-            console.log("ERROR: BreadthSearchPath not finalized. Cannot create RelationshipTemplate!");
-            return undefined;
+            console.log("Warning: BreadthFirstSearchPath not finalized! still creating relationship template");
         }
         let id: string = "Conn_srcnode_" + this.source.nodeId + "_srcport_" + this.source.portId + "_tgtnode_" + this.lastTarget.nodeId + "_tgtport_" + this.lastTarget.portId;
-        let name: string = "";
+        let name: string = "Cable connection";
 
-        return new TRelationshipTemplate({ref: this.source.nodeId},{ref: this.lastTarget.nodeId}, id, name)
+        return new TRelationshipTemplate({ref: this.source.nodeId},{ref: this.lastTarget.nodeId}, name, id);
     }
 
-    getClone(): BreadthSearchPath{
+    /**
+     * properly clones a breadth-first search path
+     * use this for cloning, otherwise bad things happen (aka multiple instances share the same list of visited paths, etc.)
+     * @return a clone of this object
+     */
+    getClone(): BreadthFirstSearchPath{
         let clonedNodeIdsList: string[] = [];
         for(let i=0; i< this.nodeIdsVisited.length; i++){
             clonedNodeIdsList.push(this.nodeIdsVisited[i]);
@@ -1019,6 +1035,6 @@ class BreadthSearchPath{
         let clonedTarget = new HardwareConnectionEndpoint();
         clonedTarget.nodeId = this.lastTarget.nodeId;
         clonedTarget.portId = this.lastTarget.portId;
-        return new BreadthSearchPath(clonedNodeIdsList, clonedSource, clonedTarget);
+        return new BreadthFirstSearchPath(clonedNodeIdsList, clonedSource, clonedTarget);
     }
 }
