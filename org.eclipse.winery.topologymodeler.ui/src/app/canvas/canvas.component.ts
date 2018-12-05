@@ -262,19 +262,21 @@ export class CanvasComponent implements OnInit, OnDestroy, OnChanges, AfterViewI
         this.substitutionRelationshipTemplates.forEach(oldRel => {
             let stillExisting = false;
             for(let newIndex = 0; newIndex < substitutionRelationships.length; newIndex++){
-                //console.log("oldRel.id="+oldRel.id + " newRel id=" + substitutionRelationships[newIndex].id);
                 if(oldRel.id === substitutionRelationships[newIndex].id){
                     stillExisting = true;
                     break;
                 }
             }
             if(!stillExisting){
+                console.log("unpainting rel ");
+                console.log(oldRel);
                 this.unPaintRelationship(oldRel);
             }
         });
 
         // save new list of substitution relationships
         this.substitutionRelationshipTemplates = substitutionRelationships;
+        console.log(substitutionRelationships);
         this.updateRelationshipsForViewChange(this.allRelationshipTemplates);
         console.log("updated Substitution Relationship Templates in canvas");
     }

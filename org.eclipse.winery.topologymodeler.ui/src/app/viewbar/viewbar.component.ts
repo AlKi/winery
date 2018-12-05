@@ -59,18 +59,12 @@ export class ViewbarComponent implements OnDestroy {
     viewbarButtonsState: TopologyRendererState;
     unformattedTopologyTemplate;
     subscriptions: Array<Subscription> = [];
-    splittingOngoing: boolean;
-    matchingOngoing: boolean;
     groups: TGroupModel[];
     nodeIdsToHide: string[] = [];
     relationshipIdsToHide: string[] = [];
     substitutionNodes: TNodeTemplate[] = [];
     substitutionRelationships: TRelationshipTemplate[] = [];
-    // hiding nodes AND substituting groups in parallel
-    // does not work well.
-    // so at any given point in time,
-    // do only one of thime!
-    visualModificationMode: VisualModificationMode = VisualModificationMode.NONE;
+
 
     constructor(private alert: ToastrService,
                 private ngRedux: NgRedux<IWineryState>,
@@ -363,7 +357,7 @@ export class ViewbarComponent implements OnDestroy {
         this.checkRelationshipsToHide();
 
         // create substitution node with this group's id and name
-        /*public properties: any,
+        /*      public properties: any,
                 public id: string,
                 public type: string,
                 public name: string,
@@ -504,38 +498,29 @@ export class ViewbarComponent implements OnDestroy {
     }
 
     /**
-     * hides or un-hides all nodes which are oft the given node type or children of it, according to the activated buttons
+     * hides or un-hides all nodes which are of the given node type or children of it, according to the activated buttons
      */
     clickHideUnhideNodes(){
-        var additionalNodeIdsToHide: string[] = [];
+        this.nodeIdsToHide = [];
         // iterate over all node components
         for( var nodeIndex=0; nodeIndex<this.unformattedTopologyTemplate.nodeTemplates.length; nodeIndex++ ){
             if(this.viewbarButtonsState.buttonsState.hideHardwareButton){
                 if(this.checkIfNodeTypeDerivedOf(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].type, '{http://www.example.org/tosca/nodetypes}Hardware-Node_0.0.1-w1-wip1')){
                     // add this node to the list of nodes to be set invisible
-                    additionalNodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
+                    this.nodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
                 }
             }
             if(this.viewbarButtonsState.buttonsState.hideSoftwareButton){
                 if(!this.checkIfNodeTypeDerivedOf(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].type, '{http://www.example.org/tosca/nodetypes}Hardware-Node_0.0.1-w1-wip1')){
                     // add this node to the list of nodes to be set invisible
-                    additionalNodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
+                    this.nodeIdsToHide.push(this.unformattedTopologyTemplate.nodeTemplates[nodeIndex].id);
                 }
             }
         }
-        this.nodeIdsToHide.forEach(nodeId => {
-            for(let newNodeIdIndex = 0; newNodeIdIndex < additionalNodeIdsToHide.length; newNodeIdIndex++){
-                if(additionalNodeIdsToHide[newNodeIdIndex] === nodeId){
-                    // node already hidden, quit this function
-                    return;
-                }
-                // "else" if this node is not already hidden, add it to the array of nodes to be hidden
-                this.nodeIdsToHide.push(nodeId);
-            }
-        });
-        this.alert.info("Hiding " + additionalNodeIdsToHide.length + " Nodes");
+        this.alert.info("Hiding " + this.nodeIdsToHide.length + " Nodes");
         this.checkRelationshipsToHide();
-        console.log("hiding nodes: " + JSON.stringify(additionalNodeIdsToHide));
+        console.log("hiding nodes: ");
+        console.log(this.nodeIdsToHide);
         console.log("hiding relationships: " + JSON.stringify(this.relationshipIdsToHide));
         this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
     }
@@ -547,6 +532,24 @@ export class ViewbarComponent implements OnDestroy {
      * Then replaces them and their relationships (relationships to substitution nodes as well) with substitution relationships
      */
     clickSubstituteCables(){
+        // update Button state (locally is enough, no one else needs to know)
+        this.viewbarButtonsState.buttonsState.substituteCablesButton = !this.viewbarButtonsState.buttonsState.substituteCablesButton;
+
+        // reset if needed (TODO: do properly! If there was a Group hidden or substituted, this would be reverted
+        if(!this.viewbarButtonsState.buttonsState.substituteCablesButton){
+            this.relationshipIdsToHide = [];
+            this.nodeIdsToHide = [];
+            this.substitutionRelationships = [];
+            this.substitutionNodes = [];
+            // dispatch updating global substitution relationships
+            this.ngRedux.dispatch(this.actions.setGroupsSubstitutions([], []));
+            // dispatch updating global lists of hidden nodes and relationships
+            this.ngRedux.dispatch(this.actions.hideNodesAndRelationships([], []));
+            // done, return
+            return;
+        }
+
+        console.log("substituting");
 
         /** List of all cable nodes */
         let cableNodes: TNodeTemplate[] = [];
@@ -575,10 +578,10 @@ export class ViewbarComponent implements OnDestroy {
             }
         });
 
-        console.log("cableNodes:");
+        /*console.log("cableNodes:");
         console.log(cableNodes);
         console.log("cableNodesToSubstitute:");
-        console.log(cableNodesToSubstitute);
+        console.log(cableNodesToSubstitute);*/
 
         /** List of all relationships to or from those non-hidden cable nodes */
         let relationShipsOfCablesToSubstitute: TRelationshipTemplate[] = [];
@@ -612,19 +615,10 @@ export class ViewbarComponent implements OnDestroy {
                     }
                 }
             }
-            // iterate all substitution relationshipTemplates and check, if this node is the target or source.
-            /* TODO
-            for(let relTempIndex=0; relTempIndex<this.substitutionRelationships.length; relTempIndex++){
-                if((this.substitutionRelationships[relTempIndex].sourceElement.ref === nodeId)
-                    || (this.substitutionRelationships[relTempIndex].targetElement.ref === nodeId)){
-                    // if so, add this substitution relationship to the list of substitutions to be (further) substituted
-                    substitutionRelationshipsToSubstitute.push(this.substitutionRelationships[relTempIndex]);
-                }
-            }*/
         });
 
-        console.log("relationShipsOfCablesToSubstitute:");
-        console.log(relationShipsOfCablesToSubstitute);
+        //console.log("relationShipsOfCablesToSubstitute:");
+        //console.log(relationShipsOfCablesToSubstitute);
 
         /** all non-hidden nodes connected to cables ("Edge"-nodes) */
         let edgeNodes: TNodeTemplate[] = [];
@@ -660,21 +654,21 @@ export class ViewbarComponent implements OnDestroy {
             });
         });
 
-        console.log("edgeNodes:");
-        console.log(edgeNodes);
+        //console.log("edgeNodes:");
+        //console.log(edgeNodes);
 
         // connections made by cables
         let cableConnections: BreadthFirstSearchPath[] = this.findHardwareConnections(relationShipsOfCablesToSubstitute,
                                                                                 cableNodesToSubstitute,
                                                                                 edgeNodes);
 
-        console.log("found these cable connections:");
-        console.log(cableConnections);
+        //console.log("found these cable connections:");
+        //console.log(cableConnections);
 
         /** cable node substitution relationships */
         let cableConnectionSubstitutionRelationships: TRelationshipTemplate[] = [];
         cableConnections.forEach(conn => {
-           cableConnectionSubstitutionRelationships.push(conn.createRelationshipTemplate());
+           cableConnectionSubstitutionRelationships.push(conn.createRelationshipTemplate('{http://www.example.org/tosca/nodetypes}Cable_Node_0.0.1-w1-wip1'));
         });
 
         this.alert.info("Hiding " + cableNodesToSubstitute.length + " Nodes");
@@ -691,17 +685,17 @@ export class ViewbarComponent implements OnDestroy {
             this.substitutionRelationships.push(cableConnectionSubstitutionRelationships[index]);
         }
 
-        console.log("hiding nodes: ");
+        /*console.log("hiding nodes: ");
         console.log(cableNodesToSubstitute);
         console.log("hiding relationships: ");
-        console.log(this.relationshipIdsToHide);
+        console.log(this.relationshipIdsToHide);*/
         console.log("substitution relationships:");
         console.log(this.substitutionRelationships);
 
         // dispatch updating global lists of hidden nodes and relationships
         this.ngRedux.dispatch(this.actions.hideNodesAndRelationships(this.nodeIdsToHide, this.relationshipIdsToHide));
         // dispatch updating global substitution relationships
-        this.ngRedux.dispatch(this.actions.setGroupsSubstitutions([], cableConnectionSubstitutionRelationships));
+        this.ngRedux.dispatch(this.actions.setGroupsSubstitutions(this.substitutionNodes, this.substitutionRelationships));
     }
 
 
@@ -937,13 +931,6 @@ export class ViewbarComponent implements OnDestroy {
 }
 
 
-enum VisualModificationMode {
-    HIDENODES,
-    SUBSTITUTENODES,
-    NONE
-}
-
-
 
 class HardwareConnectionEndpoint{
     nodeId: string;
@@ -1009,13 +996,15 @@ class BreadthFirstSearchPath{
     }
 
 
-    createRelationshipTemplate(): TRelationshipTemplate{
+    createRelationshipTemplate(relationshipType?: string): TRelationshipTemplate{
         if(!this.finalized){
             console.log("Warning: BreadthFirstSearchPath not finalized! still creating relationship template");
         }
         let id: string = "Conn_srcnode_" + this.source.nodeId + "_srcport_" + this.source.portId + "_tgtnode_" + this.lastTarget.nodeId + "_tgtport_" + this.lastTarget.portId;
         let name: string = "Cable connection";
-
+        if(relationshipType){
+            return new TRelationshipTemplate({ref: this.source.nodeId},{ref: this.lastTarget.nodeId}, name, id, relationshipType);
+        }
         return new TRelationshipTemplate({ref: this.source.nodeId},{ref: this.lastTarget.nodeId}, name, id);
     }
 

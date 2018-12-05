@@ -196,11 +196,11 @@ export class TopologyRendererActions {
         };
     }
 
-    setGroupsSubstitutions(substitutionNodeIds: TNodeTemplate[], substitutionRelationshipIds: TRelationshipTemplate[]): SetGroupsSubstitutionsAction  {
+    setGroupsSubstitutions(substitutionNodes: TNodeTemplate[], substitutionRelationships: TRelationshipTemplate[]): SetGroupsSubstitutionsAction  {
         return {
             type: TopologyRendererActions.GROUPS_SUBSTITUTIONS_MODIFIED,
-            substitutionNodes: substitutionNodeIds,
-            substitutionRelationships: substitutionRelationshipIds
+            substitutionNodes: substitutionNodes,
+            substitutionRelationships: substitutionRelationships
         };
 
     }

@@ -18,7 +18,8 @@ import {
     HideNodesAndRelationshipsAction,
     TopologyRendererActions,
     ModifyGroupsVisibilityAction,
-    ModifyGroupsSubstitutionButtonsAction, SetGroupsSubstitutionsAction
+    ModifyGroupsSubstitutionButtonsAction,
+    SetGroupsSubstitutionsAction
 } from '../actions/topologyRenderer.actions';
 import {TNodeTemplate, TRelationshipTemplate} from "../../models/ttopology-template";
 
@@ -293,8 +294,8 @@ export const TopologyRendererReducer =
             case TopologyRendererActions.GROUPS_SUBSTITUTIONS_MODIFIED: {
                 const myAction = <SetGroupsSubstitutionsAction>action;
                 const state = lastState;
-                state.substitutionNodes = myAction.substitutionNodes,
-                state.substitutionRelationships = myAction.substitutionRelationships
+                state.substitutionNodes = myAction.substitutionNodes;
+                state.substitutionRelationships = myAction.substitutionRelationships;
                 return state;
             }
         }
